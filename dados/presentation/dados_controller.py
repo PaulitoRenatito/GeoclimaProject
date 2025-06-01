@@ -19,7 +19,7 @@ requests = (Stream.of(mg_stations_codes)
                  .build())
             .to_list())
 
-response = dados_estacoes_service.get_dados_intermittently(requests, token, 0.03)
+response = dados_estacoes_service.get_dados_intermittently(requests, token, 1)
 
 
-Stream.of(response).for_each(lambda dados: csv_exporter.export(dados, get_file_name(dados[0].DC_NOME, data_inicial, data_final)))
+# Stream.of(response).for_each(lambda dados: csv_exporter.export(dados, get_file_name(dados[0].DC_NOME, data_inicial, data_final)))

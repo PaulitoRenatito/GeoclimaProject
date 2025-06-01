@@ -6,8 +6,6 @@ class Dados(BaseModel):
     """
     DC_NOME: str
     CD_ESTACAO: str
-    VL_LATITUDE: str
-    VL_LONGITUDE: str
     UF: str
     DT_MEDICAO: str
     TEMP_MED: str | None

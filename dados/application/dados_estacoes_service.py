@@ -21,8 +21,12 @@ def get_dados_intermittently(
         time_between_requests: float
 ) -> list[list[Dados]] | None:
     def fetch_with_delay(request) -> list[Dados] | None:
+        timer = time.time()
         result = get_dados(request, token)
-        time.sleep(time_between_requests)
+        print(result)
+        while (time.time() - timer) < time_between_requests:
+            # Ensure we wait for the specified time between requests
+            pass
         return result
 
     dados_alt = Stream.of(dados_request).map(fetch_with_delay).to_list()
