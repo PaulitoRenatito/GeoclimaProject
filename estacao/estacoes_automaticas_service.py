@@ -1,7 +1,7 @@
-from . import estacoes_automaticas_provider as provider
+import estacoes_automaticas_provider as provider
 from pystreamapi import Stream
 
-from .estacao import Estacao
+from estacao import Estacao
 
 
 def get_by_state(estado: str) -> list[Estacao] | None:
