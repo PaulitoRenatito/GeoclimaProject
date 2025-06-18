@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-class Dados(BaseModel):
+class WeatherData(BaseModel):
     """
     Model representing a data record from a weather station.
     """

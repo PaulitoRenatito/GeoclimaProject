@@ -1,17 +1,18 @@
-from dados.domain.dados import Dados
+from typing import Collection, Any
 
 
-def export(data: list[Dados], filename: str) -> None:
+def export(filename: str, data: list[Any], fieldnames: Collection[Any]) -> None:
     """
-    Exports a list of Dados objects to a CSV file.
+    Exports a list of data to a CSV file.
 
-    :param data: List of Dados objects to export.
     :param filename: Name of the output CSV file.
+    :param data: List of data to export.
+    :param fieldnames: Collection of field names for the CSV header.
     """
     import csv
 
     with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=Dados.model_fields.keys())
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for dado in data:
             writer.writerow(dado.model_dump())
