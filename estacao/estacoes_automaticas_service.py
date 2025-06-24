@@ -1,17 +1,11 @@
 import estacoes_automaticas_provider as provider
-from pystreamapi import Stream
 
 from estacao import Estacao
 
 
 def get_by_state(estado: str) -> list[Estacao] | None:
-    return (Stream.of(provider.get())
-            .filter(lambda estacao: estacao.SG_ESTADO == estado)
-            .to_list())
+    return [estacao for estacao in provider.get() if estacao.SG_ESTADO == estado]
 
 
 def get_code_by_state(estado: str) -> list[Estacao] | None:
-    return (Stream.of(provider.get())
-            .filter(lambda estacao: estacao.SG_ESTADO == estado)
-            .map(lambda estacao: estacao.CD_ESTACAO)
-            .to_list())
+    return [estacao.CD_ESTACAO for estacao in provider.get() if estacao.SG_ESTADO == estado]
