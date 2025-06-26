@@ -11,11 +11,11 @@ data_inicial: str = '2025-05-25'
 data_final: str = '2025-05-30'
 
 requests = [
-    WeatherDataRequest.builder()
-    .initial_date(data_inicial)
-    .end_date(data_final)
-    .station_code(code)
-    .build()
+    WeatherDataRequest(
+        initial_date=data_inicial,
+        end_date=data_final,
+        station_code=code,
+    )
     for code in mg_stations_codes
 ]
 
