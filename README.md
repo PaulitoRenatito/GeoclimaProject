@@ -26,14 +26,20 @@ cd seu-repositorio
 ### 🔸 Passo 2 — Crie um ambiente virtual
 - Windows:
 ```bash
-python -m venv venv
+python -m venv .venv
+```
+
+```bash
 venv\Scripts\activate
 ```
 
 - Linux/Mac:
 ```bash
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+```
+
+```bash
+source .venv/bin/activate
 ```
 
 ### 🔸 Passo 3 — Instale as dependências
