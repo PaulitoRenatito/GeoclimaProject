@@ -48,4 +48,9 @@ pip install -r requirements.txt
 ```
 
 ### 🔸 Passo 4 — Como rodar?
-Selecione a `data_inicial`, `data_final` e execute o weather_data_controller.py
+Selecione a `data_inicial`, `data_final` e execute o weather_data_controller.py \
+Ou rode no terminal:
+
+```bash
+ python -m data.presentation.weather_data_controller
+```
