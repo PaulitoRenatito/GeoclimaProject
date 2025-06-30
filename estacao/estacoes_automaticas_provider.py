@@ -1,7 +1,7 @@
 import requests
 from pydantic import TypeAdapter
 
-from estacao.estacao import Estacao
+from estacao import Estacao
 
 
 def get() -> list[Estacao] | None:

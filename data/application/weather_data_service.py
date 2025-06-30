@@ -6,10 +6,9 @@ from data.domain.weather_data_request import WeatherDataRequest
 from data.infrastructure import weather_data_provider as provider
 
 
-def get_weather_data(dados_request: WeatherDataRequest, token: str) -> list[WeatherData] | None:
+def get_weather_data(dados_request: WeatherDataRequest, token: str) -> WeatherData | None:
     return provider.get(
-        dados_request.initial_date,
-        dados_request.end_date,
+        dados_request.date,
         dados_request.station_code,
         token
     )
@@ -19,16 +18,16 @@ def get_weather_data_intermittently(
         token: str,
         time_between_requests: float,
         on_event: Callable[[str, Dict[str, Any]], None] = None,
-) -> list[list[WeatherData]] | None:
+) -> list[WeatherData] | None:
     on_event("process_started", {"total_requests": len(dados_request)})
 
-    def fetch_with_delay(request) -> list[WeatherData] | None:
+    def fetch_with_delay(request) -> WeatherData | None:
         timer = time.time()
         result = get_weather_data(request, token)
         elapsed = time.time() - timer
 
         on_event("request_completed", {
-            "station_name": result[0].DC_NOME,
+            "station_name": result.DC_NOME,
             "elapsed_time": elapsed
         })
 
