@@ -1,6 +1,4 @@
-/env/
 .venv
 .idea
-/csv/
+/env/
 /excel/
-secrets.py

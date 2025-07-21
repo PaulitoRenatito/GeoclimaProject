@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Collection
+from typing import Any
 
 
 class Exporter(ABC):
@@ -7,7 +7,7 @@ class Exporter(ABC):
     Abstract base class for exporters.
     """
 
-    def __init__(self, date: str, data: list[Any], fieldnames: Collection[Any]) -> None:
+    def __init__(self, date: str, data: list[Any]) -> None:
         """
         Initialize the exporter with date, data, and fieldnames.
 
@@ -17,7 +17,6 @@ class Exporter(ABC):
         """
         self.date = date
         self.data = data
-        self.fieldnames = fieldnames
 
     @abstractmethod
     def export(self):
