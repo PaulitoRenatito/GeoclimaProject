@@ -1,19 +1,26 @@
-from typing import Collection, Any
 import csv
 
+from exporter.exporter import Exporter
 
-def export(filename: str, data: list[Any], fieldnames: Collection[Any]) -> None:
-    """
-    Exports a list of data to a CSV file.
 
-    :param filename: Name of the output CSV file.
-    :param data: List of data to export.
-    :param fieldnames: Collection of field names for the CSV header.
-    """
+class CSVExporter(Exporter):
+    def export(self) -> None:
+        """
+        Export data to a CSV file with the specified fieldnames.
+        """
+        filename = self.get_file_name()
 
-    dict_data = [dado.model_dump() for dado in data]
+        dict_data = [dado.model_dump() for dado in self.data]
 
-    with open(filename, 'w+', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(dict_data)
+        with open(filename, 'w+', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=self.fieldnames)
+            writer.writeheader()
+            writer.writerows(dict_data)
+
+
+    def get_file_name(self) -> str:
+        """
+        Generate a normalized file name based on station name and date range.
+        """
+        folder_name = 'csv'
+        return f"{folder_name}/{self.date.replace('-', '_')}.csv"

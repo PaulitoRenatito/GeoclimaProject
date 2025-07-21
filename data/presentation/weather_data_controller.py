@@ -3,11 +3,10 @@ from data.domain.weather_data import WeatherData
 from data.domain.weather_data_request import WeatherDataRequest
 from data.infrastructure.weather_data_logger import weather_data_logger
 from env.secrets import token
-from exporter import csv_exporter
+from exporter.excel_exporter import ExcelExporter
 from utils.constants import mg_stations_dict
-from utils.utils import get_file_name
 
-date: str = '2025-06-25'
+date: str = '2025-07-18'
 
 requests = [
     WeatherDataRequest(
@@ -20,12 +19,16 @@ requests = [
 response = weather_data_service.get_weather_data_intermittently(
     requests,
     token,
-    1,
+    .5,
     on_event=weather_data_logger
 )
 
-csv_exporter.export(
-    get_file_name(date),
-    response,
-    WeatherData.model_fields.keys()
-)
+if response:
+    exporter = ExcelExporter(
+        date=date,
+        data=response,
+        fieldnames=WeatherData.model_fields.keys(),
+    )
+    exporter.export()
+else:
+    print("Nenhuma resposta recebida do serviço, nenhum arquivo foi gerado.")
