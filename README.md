@@ -34,7 +34,7 @@ Siga os passos abaixo para deixar o ambiente pronto para execução.
     pip install -r requirements.txt
     ```
 
-### 3. Configuração do Projeto
+### 3. Configuração do Projeto (Caso usar o terminal)
 
 Antes da primeira execução, dois arquivos precisam ser configurados:
 
@@ -58,6 +58,26 @@ Antes da primeira execução, dois arquivos precisam ser configurados:
 2.  **Parâmetros da Busca**
     -   Abra o arquivo `config.py`.
     -   Altere a variável `DATA_DA_BUSCA` para a data que você deseja consultar, usando o formato `"AAAA-MM-DD"`.
+
+---
+
+## ▶️ Como Executar(UI)
+
+A maneira mais fácil e recomendada de usar o programa é através da interface gráfica. Abra o terminal na pasta do projeto e execute o seguinte comando:
+
+```bash
+python gui.py
+```
+
+1. Cole seu Token: No campo Token INMET, cole o código de acesso que você obteve do INMET. O campo esconderá os caracteres por segurança.
+2. Escolha a Data: O campo Data já vem preenchido com o dia de hoje. Altere se desejar buscar dados de outra data.
+3. Inicie a Coleta: Clique no botão azul Iniciar Coleta de Dados.]
+
+> A **barra de progresso** será preenchida à medida que os dados de cada estação são coletados.
+> 
+> A caixa de **Status** mostrará mensagens em tempo real, informando o que está acontecendo.
+> 
+> Ao final, a mensagem de resultado aparecerá na parte inferior. **Clique nela para abrir a planilha do Excel diretamente!**
 
 ---
 

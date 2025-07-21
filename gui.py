@@ -98,9 +98,9 @@ class WeatherApp:
                 elif msg_type == 'enable_button':
                     self.start_button.config(state='normal')
         except queue.Empty:
-            pass  # A fila está vazia, o que é normal
+            pass
         finally:
-            self.root.after(100, self.process_queue)  # Agenda a próxima verificação
+            self.root.after(100, self.process_queue)
 
     def show_success_path(self, file_path):
         full_path = os.path.abspath(file_path)
