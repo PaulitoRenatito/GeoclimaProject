@@ -55,7 +55,7 @@ class CsvExporter(Exporter):
 
         df_final = df_final.rename(columns=mapeamento_colunas)
 
-        df_final.to_csv(filename, index=False, sep=';', encoding='utf-8-sig')
+        df_final.to_csv(filename, index=False, sep=',', encoding='utf-8-sig')
 
         print(f"Sucesso! Dados exportados para o arquivo CSV '{filename}'")
 

@@ -9,6 +9,7 @@ class LabeledInput(ttk.Frame, ABC):
             parent,
             label_text,
             default_value=None,
+            can_be_empty=False,
             entry_width=30,
             entry_options=None,
             **kwargs

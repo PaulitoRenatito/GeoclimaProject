@@ -1,9 +1,11 @@
-from datetime import datetime
+from datetime import datetime, date
 from queue import Queue
+from typing import Optional, List
 
 from config import INTERVALO_ENTRE_REQUISICOES
 from geoclima_weather.presentation.model.weather_data_request import WeatherDataRequest
 from ..application import weather_data_service
+from ..domain.weather_data import WeatherData
 from ..infrastructure.util.constants import mg_stations_dict
 
 
@@ -11,7 +13,7 @@ def start_weather_data_collection(
         token: str,
         progress_queue: Queue,
         initial_date: str,
-        final_date: str = None,
+        final_date: Optional[str] = None,
 ):
     """
     Starts the collection of weather data for a given date and token.
@@ -19,10 +21,10 @@ def start_weather_data_collection(
     if final_date is None:
         final_date = initial_date
 
-    initial_date = datetime.strptime(initial_date, '%Y-%m-%d').date()
-    final_date = datetime.strptime(final_date, '%Y-%m-%d').date()
+    initial_date: date = datetime.strptime(initial_date, '%Y-%m-%d').date()
+    final_date: date = datetime.strptime(final_date, '%Y-%m-%d').date()
 
-    requests = [
+    requests: List[WeatherDataRequest] = [
         WeatherDataRequest(
             initial_date=initial_date,
             final_date=final_date,
@@ -31,7 +33,7 @@ def start_weather_data_collection(
         for name, code in mg_stations_dict.items()
     ]
 
-    dados_coletados = weather_data_service.get_weather_data_intermittently(
+    dados_coletados: list[list[WeatherData]] = weather_data_service.get_weather_data_intermittently(
         requests,
         token,
         INTERVALO_ENTRE_REQUISICOES,

@@ -13,7 +13,7 @@ def get_weather_data_intermittently(
         token: str,
         time_between_requests: float,
         progress_queue: Queue = None,
-) -> list[WeatherData]:
+) -> list[list[WeatherData]]:
     if progress_queue:
         progress_queue.put(('config_progress', len(dados_request)))
 
@@ -26,7 +26,7 @@ def get_weather_data_intermittently(
 
         if progress_queue:
             if result:
-                progress_queue.put(('log', f"Dados recebidos para: {result.DC_NOME}"))
+                progress_queue.put(('log', f"Dados recebidos para: {result[0].DC_NOME}"))
             else:
                 progress_queue.put(('log', f"Falha ao obter dados da estação: {request.station_code}"))
             progress_queue.put(('progress_step', 1))
@@ -40,7 +40,7 @@ def get_weather_data_intermittently(
 
     return results
 
-def get_weather_data(dados_request: WeatherDataRequest, token: str) -> WeatherData | None:
+def get_weather_data(dados_request: WeatherDataRequest, token: str) -> list[WeatherData] | None:
     try:
         return provider.get(
             dados_request.initial_date,

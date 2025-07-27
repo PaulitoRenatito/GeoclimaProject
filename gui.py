@@ -1,7 +1,7 @@
+import queue
+import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
-import threading
-import queue
 
 from geoclima_ui.frame.action_frame import ActionFrame
 from geoclima_ui.frame.input_frame import InputFrame
@@ -14,9 +14,11 @@ from geoclima_ui.task.get_export_data import get_export_data
 class WeatherApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Geoclima - Coletor de Dados Meteorológicos v2.0")
-        self.root.geometry("750x550")
-        self.root.minsize(600, 450)
+        self.root.title("Geoclima - Coletor de Dados Meteorológicos")
+        photo = tk.PhotoImage(file="res/geoclima_only_icon.png")
+        root.iconphoto(False, photo)
+        self.root.geometry("770x550")
+        self.root.minsize(770, 550)
 
         # Fila para comunicação segura entre a thread de trabalho e a GUI
         self.comm_queue = queue.Queue()
@@ -91,7 +93,7 @@ class WeatherApp:
 
     def start_task(self):
         try:
-            token, date_str = self.input_frame.get_values()
+            token, initial_date_str, final_date_str = self.input_frame.get_values()
         except InputValidationError as e:
             messagebox.showwarning("Entrada Inválida", e.message)
             return
@@ -100,12 +102,16 @@ class WeatherApp:
         self.action_frame.set_button_state('disabled')
         self.progress_frame.reset()
         self.log_frame.reset()
-        self.log_frame.log_message(f"Iniciando coleta para a data: {date_str}")
+
+        if not final_date_str:
+            self.log_frame.log_message(f"Iniciando coleta para a data: {initial_date_str}")
+        else:
+            self.log_frame.log_message(f"Iniciando coleta entre as datas: {initial_date_str} e {final_date_str}")
 
         # Inicia a thread de trabalho
         threading.Thread(
             target=get_export_data,
-            args=(token, date_str, self.comm_queue),
+            args=(token, self.comm_queue, initial_date_str, final_date_str),
             daemon=True
         ).start()
 

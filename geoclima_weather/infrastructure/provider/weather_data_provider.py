@@ -13,17 +13,17 @@ def get(
     final_date: datetime.date,
     station_code: str,
     token: str,
-) -> WeatherData:
+) -> list[WeatherData]:
     response = requests.get(build_url(
         initial_date.strftime('%Y-%m-%d'),
         final_date.strftime('%Y-%m-%d'),
         station_code,
-        token
+        token,
     ))
 
     if response.status_code == 200:
-        response_json = json.loads(response.content)[0]
-        dados_list_adapter = TypeAdapter(WeatherData)
+        response_json = json.loads(response.content)
+        dados_list_adapter = TypeAdapter(list[WeatherData])
         return dados_list_adapter.validate_python(response_json)
     else:
         raise GetDailyStationException(

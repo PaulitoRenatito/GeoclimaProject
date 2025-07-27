@@ -14,11 +14,14 @@ class InputFrame(ttk.LabelFrame):
         self.token_input.grid(row=0, column=0, sticky="ew", pady=5)
 
         yesterday_date = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
-        self.date_input = DateInput(self, label_text="Data (AAAA-MM-DD):", default_value=yesterday_date)
-        self.date_input.grid(row=1, column=0, sticky="ew", pady=5)
+        self.initial_date_input = DateInput(self, label_text="Data Inicial (AAAA-MM-DD):", default_value=yesterday_date)
+        self.initial_date_input.grid(row=1, column=0, sticky="ew", pady=5)
+
+        self.final_date_input = DateInput(self, label_text="Data Final (AAAA-MM-DD):", can_be_empty=True)
+        self.final_date_input.grid(row=1, column=1, sticky="ew", pady=5)
 
     def get_values(self):
         """Valida e retorna os valores dos inputs."""
         self.token_input.validate()
-        self.date_input.validate()
-        return self.token_input.get(), self.date_input.get()
+        self.initial_date_input.validate()
+        return self.token_input.get(), self.initial_date_input.get(), self.final_date_input.get() or None
