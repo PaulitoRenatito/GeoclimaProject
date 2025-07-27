@@ -32,6 +32,9 @@ class WeatherApp:
         main_frame = ttk.Frame(self.root, padding="15")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_rowconfigure(3, weight=1)
+
         # --- Seções da UI ---
         self.input_frame = InputFrame(main_frame)
         self.input_frame.grid(
