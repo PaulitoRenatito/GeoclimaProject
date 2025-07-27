@@ -1,5 +1,6 @@
-from tkinter import ttk
 from abc import ABC, abstractmethod
+from tkinter import ttk
+
 
 class LabeledInput(ttk.Frame, ABC):
     """Widget base que combina um Label e um Entry."""

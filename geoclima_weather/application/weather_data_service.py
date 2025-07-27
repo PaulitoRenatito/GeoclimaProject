@@ -1,9 +1,9 @@
-import time
 import logging
+import time
 from queue import Queue
 
-from ..domain.weather_data import WeatherData
 from geoclima_weather.presentation.model.weather_data_request import WeatherDataRequest
+from ..domain.weather_data import WeatherData
 from ..infrastructure.provider import weather_data_provider as provider
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

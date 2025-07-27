@@ -1,8 +1,9 @@
-from tkinter import ttk
 from datetime import datetime, timedelta
+from tkinter import ttk
 
 from geoclima_ui.input.date_input import DateInput
 from geoclima_ui.input.password_input import PasswordInput
+
 
 class InputFrame(ttk.LabelFrame):
     def __init__(self, parent, **kwargs):

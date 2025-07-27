@@ -1,5 +1,6 @@
-from geoclima_ui.input.labeled_input import LabeledInput
 from geoclima_ui.input.exceptions import InputValidationError
+from geoclima_ui.input.labeled_input import LabeledInput
+
 
 class TextInput(LabeledInput):
     """Um LabeledInput para entrada de texto padrão."""

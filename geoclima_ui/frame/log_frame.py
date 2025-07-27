@@ -1,8 +1,9 @@
-import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox
-from datetime import datetime
-import webbrowser
 import os
+import tkinter as tk
+import webbrowser
+from datetime import datetime
+from tkinter import ttk, scrolledtext, messagebox
+
 
 class LogFrame(ttk.LabelFrame):
     def __init__(self, parent, **kwargs):
