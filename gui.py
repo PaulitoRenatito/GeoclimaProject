@@ -1,16 +1,14 @@
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox
-from datetime import datetime, timedelta
+from tkinter import ttk, messagebox
 import threading
 import queue
-import os
-import webbrowser
 
-from geoclima_exporter.csv_exporter import CsvExporter
-from geoclima_ui.input.date_input import DateInput
+from geoclima_ui.frame.action_frame import ActionFrame
+from geoclima_ui.frame.input_frame import InputFrame
+from geoclima_ui.frame.log_frame import LogFrame
+from geoclima_ui.frame.progress_frame import ProgressFrame
 from geoclima_ui.input.exceptions import InputValidationError
-from geoclima_ui.input.password_input import PasswordInput
-from geoclima_weather.presentation import weather_controller
+from geoclima_ui.task.get_export_data import get_export_data
 
 
 class WeatherApp:
@@ -32,139 +30,84 @@ class WeatherApp:
         main_frame = ttk.Frame(self.root, padding="15")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # --- Seção de Entradas do Usuário ---
-        input_frame = ttk.LabelFrame(main_frame, text="1. Insira os Dados", padding="10")
-        input_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-        input_frame.columnconfigure(1, weight=1)
-
-        self.token_input = PasswordInput(
-            parent=input_frame,
-            label_text="Token INMET:",
+        # --- Seções da UI ---
+        self.input_frame = InputFrame(main_frame)
+        self.input_frame.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=5,
+            pady=5,
         )
-        self.token_input.grid(row=0, column=0, sticky="ew", pady=5)
 
-        yesterday_date = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
-        self.date_input = DateInput(
-            parent=input_frame,
-            label_text="Data (AAAA-MM-DD):",
-            default_value=yesterday_date,
+        self.action_frame = ActionFrame(main_frame, start_command=self.start_task)
+        self.action_frame.grid(
+            row=1,
+            column=0,
+            sticky="ew",
+            padx=5,
+            pady=15,
         )
-        self.date_input.grid(row=1, column=0, sticky="ew", pady=5)
 
-        # --- Seção de Ação ---
-        action_frame = ttk.Frame(main_frame)
-        action_frame.grid(row=1, column=0, sticky="ew", padx=5, pady=15)
-        self.start_button = ttk.Button(action_frame, text="Iniciar Coleta de Dados", command=self.start_task)
-        self.start_button.pack()
+        self.progress_frame = ProgressFrame(main_frame)
+        self.progress_frame.grid(
+            row=2,
+            column=0,
+            sticky="ew",
+            padx=5,
+            pady=5,
+        )
 
-        # --- Seção de Progresso ---
-        progress_frame = ttk.LabelFrame(main_frame, text="2. Progresso", padding="10")
-        progress_frame.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
-
-        self.progress_bar = ttk.Progressbar(progress_frame, orient='horizontal', mode='determinate')
-        self.progress_bar.pack(fill=tk.X, expand=True)
-
-        # --- Seção de Logs e Resultados ---
-        log_frame = ttk.LabelFrame(main_frame, text="3. Status e Resultado", padding="10")
-        log_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
-        log_frame.rowconfigure(0, weight=1)
-        log_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(3, weight=1)  # Faz o frame de log expandir verticalmente
-
-        self.log_area = scrolledtext.ScrolledText(log_frame, state='disabled', wrap=tk.WORD, height=10)
-        self.log_area.grid(row=0, column=0, sticky="nsew", pady=(0, 10))
-
-        self.result_label = ttk.Label(log_frame, text="Aguardando resultado...", anchor="w")
-        self.result_label.grid(row=1, column=0, sticky="ew")
-
-    def log_message(self, message):
-        self.log_area.config(state='normal')
-        self.log_area.insert(tk.END, f"[{datetime.now().strftime('%H:%M:%S')}] {message}\n")
-        self.log_area.config(state='disabled')
-        self.log_area.see(tk.END)
+        self.log_frame = LogFrame(main_frame)
+        self.log_frame.grid(
+            row=3,
+            column=0,
+            sticky="nsew",
+            padx=5,
+            pady=5,
+        )
 
     def process_queue(self):
         try:
-            while True:  # Processa todas as mensagens na fila
+            while True:
                 msg_type, data = self.comm_queue.get_nowait()
 
                 if msg_type == 'log':
-                    self.log_message(data)
+                    self.log_frame.log_message(data)
                 elif msg_type == 'config_progress':
-                    self.progress_bar.config(maximum=data, value=0)
+                    self.progress_frame.configure(data)
                 elif msg_type == 'progress_step':
-                    self.progress_bar.step(data)
+                    self.progress_frame.step(data)
                 elif msg_type == 'task_done':
-                    self.show_success_path(data)
+                    self.log_frame.show_success(data)
                 elif msg_type == 'task_error':
-                    messagebox.showerror("Erro na Execução", data)
-                    self.result_label.config(text=f"Falha: {data}", foreground="red")
+                    self.log_frame.show_error(data)
                 elif msg_type == 'enable_button':
-                    self.start_button.config(state='normal')
+                    self.action_frame.set_button_state('normal')
         except queue.Empty:
             pass
         finally:
             self.root.after(100, self.process_queue)
 
-    def show_success_path(self, file_path):
-        full_path = os.path.abspath(file_path)
-        self.result_label.config(text=f"Sucesso! Planilha salva em: {full_path}", foreground="blue", cursor="hand2")
-        # A função lambda é usada para passar o argumento 'full_path' para o callback
-        self.result_label.bind("<Button-1>", lambda e: webbrowser.open(f"file:///{full_path}"))
-        self.log_message("Processo concluído com sucesso!")
-        messagebox.showinfo("Concluído", f"A planilha foi gerada com sucesso!\n\nLocal: {full_path}")
-
     def start_task(self):
         try:
-            self.token_input.validate()
-            self.date_input.validate()
+            token, date_str = self.input_frame.get_values()
         except InputValidationError as e:
             messagebox.showwarning("Entrada Inválida", e.message)
             return
 
-        token = self.token_entry.get()
-        date_str = self.date_entry.get()
-
         # Reseta a GUI para uma nova execução
-        self.start_button.config(state='disabled')
-        self.progress_bar['value'] = 0
-        self.log_area.config(state='normal')
-        self.log_area.delete('1.0', tk.END)
-        self.log_area.config(state='disabled')
-        self.result_label.config(text="Processando...", foreground="black", cursor="")
-        self.result_label.unbind("<Button-1>")
+        self.action_frame.set_button_state('disabled')
+        self.progress_frame.reset()
+        self.log_frame.reset()
+        self.log_frame.log_message(f"Iniciando coleta para a data: {date_str}")
 
-        self.log_message(f"Iniciando coleta para a geoclima-weather: {date_str}")
-
-        # Cria e inicia a thread de trabalho para não congelar a interface
+        # Inicia a thread de trabalho
         threading.Thread(
-            target=self.run_task_logic,
-            args=(token, date_str),
+            target=get_export_data,
+            args=(token, date_str, self.comm_queue),
             daemon=True
         ).start()
-
-    def run_task_logic(self, token, date_str):
-        try:
-            dados_coletados = weather_controller.start_weather_data_collection(
-                token=token,
-                progress_queue=self.comm_queue,
-                initial_date=date_str,
-            )
-
-            if dados_coletados:
-                self.comm_queue.put(('log', "Coleta finalizada. Exportando para Excel..."))
-
-                exporter = CsvExporter(date=date_str, data=dados_coletados)
-                exporter.export()
-                file_path = exporter.get_file_name()
-                self.comm_queue.put(('task_done', file_path))
-            else:
-                self.comm_queue.put(('task_error', "Nenhum dado foi retornado pela API. Verifique a geoclima-weather."))
-
-        except Exception as e:
-            self.comm_queue.put(('task_error', f"Ocorreu um erro crítico: {e}"))
-        finally:
-            self.comm_queue.put(('enable_button', None))
 
 
 if __name__ == "__main__":
