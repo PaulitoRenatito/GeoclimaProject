@@ -1,14 +1,16 @@
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import queue
 import os
 import webbrowser
 
 from geoclima_exporter.csv_exporter import CsvExporter
+from geoclima_ui.input.date_input import DateInput
+from geoclima_ui.input.exceptions import InputValidationError
+from geoclima_ui.input.password_input import PasswordInput
 from geoclima_weather.presentation import weather_controller
-from geoclima_exporter.excel_exporter import ExcelExporter
 
 
 class WeatherApp:
@@ -35,14 +37,19 @@ class WeatherApp:
         input_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
         input_frame.columnconfigure(1, weight=1)
 
-        ttk.Label(input_frame, text="Token INMET:").grid(row=0, column=0, sticky="w", pady=5)
-        self.token_entry = ttk.Entry(input_frame, width=60, show="*")
-        self.token_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+        self.token_input = PasswordInput(
+            parent=input_frame,
+            label_text="Token INMET:",
+        )
+        self.token_input.grid(row=0, column=0, sticky="ew", pady=5)
 
-        ttk.Label(input_frame, text="Data (AAAA-MM-DD):").grid(row=1, column=0, sticky="w", pady=5)
-        self.date_entry = ttk.Entry(input_frame, width=20)
-        self.date_entry.insert(0, datetime.today().strftime('%Y-%m-%d'))
-        self.date_entry.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+        yesterday_date = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
+        self.date_input = DateInput(
+            parent=input_frame,
+            label_text="Data (AAAA-MM-DD):",
+            default_value=yesterday_date,
+        )
+        self.date_input.grid(row=1, column=0, sticky="ew", pady=5)
 
         # --- Seção de Ação ---
         action_frame = ttk.Frame(main_frame)
@@ -108,18 +115,15 @@ class WeatherApp:
         messagebox.showinfo("Concluído", f"A planilha foi gerada com sucesso!\n\nLocal: {full_path}")
 
     def start_task(self):
+        try:
+            self.token_input.validate()
+            self.date_input.validate()
+        except InputValidationError as e:
+            messagebox.showwarning("Entrada Inválida", e.message)
+            return
+
         token = self.token_entry.get()
         date_str = self.date_entry.get()
-
-        # Validações
-        if not token:
-            messagebox.showwarning("Entrada Inválida", "Por favor, insira o token do INMET.")
-            return
-        try:
-            datetime.strptime(date_str, '%Y-%m-%d')
-        except ValueError:
-            messagebox.showwarning("Entrada Inválida", "Por favor, use o formato de geoclima-weather AAAA-MM-DD.")
-            return
 
         # Reseta a GUI para uma nova execução
         self.start_button.config(state='disabled')
