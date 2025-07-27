@@ -6,12 +6,8 @@ import queue
 import os
 import webbrowser
 
-# Importa a lógica principal e os componentes do seu projeto
-from data.application import weather_data_service
-from data.domain.weather_data_request import WeatherDataRequest
-from exporter.excel_exporter import ExcelExporter
-from utils.constants import mg_stations_dict
-from config import INTERVALO_ENTRE_REQUISICOES
+from geoclima_weather.presentation import weather_controller
+from geoclima_exporter.excel_exporter import ExcelExporter
 
 
 class WeatherApp:
@@ -121,7 +117,7 @@ class WeatherApp:
         try:
             datetime.strptime(date_str, '%Y-%m-%d')
         except ValueError:
-            messagebox.showwarning("Entrada Inválida", "Por favor, use o formato de data AAAA-MM-DD.")
+            messagebox.showwarning("Entrada Inválida", "Por favor, use o formato de geoclima-weather AAAA-MM-DD.")
             return
 
         # Reseta a GUI para uma nova execução
@@ -133,7 +129,7 @@ class WeatherApp:
         self.result_label.config(text="Processando...", foreground="black", cursor="")
         self.result_label.unbind("<Button-1>")
 
-        self.log_message(f"Iniciando coleta para a data: {date_str}")
+        self.log_message(f"Iniciando coleta para a geoclima-weather: {date_str}")
 
         # Cria e inicia a thread de trabalho para não congelar a interface
         threading.Thread(
@@ -144,16 +140,10 @@ class WeatherApp:
 
     def run_task_logic(self, token, date_str):
         try:
-            requests = [
-                WeatherDataRequest(date=date_str, station_code=code)
-                for name, code in mg_stations_dict.items()
-            ]
-
-            dados_coletados = weather_data_service.get_weather_data_intermittently(
-                requests,
-                token,
-                INTERVALO_ENTRE_REQUISICOES,
-                progress_queue=self.comm_queue  # Passa a fila para o serviço
+            dados_coletados = weather_controller.start_weather_data_collection(
+                token=token,
+                progress_queue=self.comm_queue,
+                initial_date=date_str,
             )
 
             if dados_coletados:
@@ -167,7 +157,7 @@ class WeatherApp:
                 file_path = exporter.get_file_name()
                 self.comm_queue.put(('task_done', file_path))
             else:
-                self.comm_queue.put(('task_error', "Nenhum dado foi retornado pela API. Verifique a data."))
+                self.comm_queue.put(('task_error', "Nenhum dado foi retornado pela API. Verifique a geoclima-weather."))
 
         except Exception as e:
             self.comm_queue.put(('task_error', f"Ocorreu um erro crítico: {e}"))

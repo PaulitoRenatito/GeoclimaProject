@@ -9,10 +9,10 @@ class Exporter(ABC):
 
     def __init__(self, date: str, data: list[Any]) -> None:
         """
-        Initialize the exporter with date, data, and fieldnames.
+        Initialize the geoclima_exporter with date, geoclima-weather, and fieldnames.
 
-        :param date: The date for which the data is being exported.
-        :param data: The data to be exported.
+        :param date: The date for which the geoclima-weather is being exported.
+        :param data: The geoclima-weather to be exported.
         :param fieldnames: The field names for the export.
         """
         self.date = date

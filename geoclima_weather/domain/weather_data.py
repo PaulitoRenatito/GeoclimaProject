@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 class WeatherData(BaseModel):
     """
-    Model representing a data record from a weather station.
+    Model representing a geoclima-weather record from a weather station.
     """
     DC_NOME: str
     CD_ESTACAO: str

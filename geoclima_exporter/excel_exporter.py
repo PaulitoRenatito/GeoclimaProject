@@ -1,11 +1,11 @@
 import pandas as pd
-from exporter.exporter import Exporter
+from .exporter import Exporter
 
 
 class ExcelExporter(Exporter):
     def export(self) -> None:
         """
-        Export weather data to an Excel file.
+        Export weather geoclima-weather to an Excel file.
         """
 
         if not self.data:

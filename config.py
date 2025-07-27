@@ -3,7 +3,7 @@
 # Altere os valores aqui para mudar o comportamento do script.
 # ================================================================
 
-# Defina a data para a qual você deseja buscar os dados.
+# Defina a geoclima-weather para a qual você deseja buscar os dados.
 # Formato: "AAAA-MM-DD"
 DATA_DA_BUSCA = "2025-07-18"
 
