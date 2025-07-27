@@ -3,20 +3,25 @@ import pandas as pd
 from .exporter import Exporter
 
 
-class ExcelExporter(Exporter):
+class CsvExporter(Exporter):
+    """
+    Exporta dados para um arquivo CSV.
+    """
+
     def export(self) -> None:
         """
-        Export weather geoclima-weather to an Excel file.
+        Exporta os dados meteorológicos para um arquivo CSV.
         """
-
         if not self.data:
             print("Nenhum dado para exportar.")
             return
 
         filename = self.get_file_name()
+        folder_name = os.path.dirname(filename)
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
 
         dict_data = [d.model_dump() for d in self.data]
-
         df = pd.DataFrame(dict_data)
 
         colunas_numericas = [
@@ -43,21 +48,21 @@ class ExcelExporter(Exporter):
             'VEL_VENTO_MED': 'Vento (m/s)',
         }
 
-        df_final = df[mapeamento_colunas.keys()]
+        colunas_existentes = [col for col in mapeamento_colunas.keys() if col in df.columns]
+        df_final = df[colunas_existentes]
 
         df_final = df_final.rename(columns=mapeamento_colunas)
 
-        df_final.to_excel(filename, index=False, sheet_name=self.date)
+        df_final.to_csv(filename, index=False, sep=';', encoding='utf-8-sig')
 
-        print(f"Sucesso! Dados exportados para a planilha '{filename}'")
-
+        print(f"Sucesso! Dados exportados para o arquivo CSV '{filename}'")
 
     def get_file_name(self) -> str:
         """
-        Generate a normalized file name based on station name and date range.
+        Gera um nome de arquivo normalizado com base na data.
         """
-        if not os.path.exists('excel'):
-            os.makedirs('excel')
+        if not os.path.exists('csv'):
+            os.makedirs('csv')
 
-        folder_name = 'excel'
-        return f"{folder_name}/{self.date.replace('-', '_')}.xlsx"
+        folder_name = 'csv'
+        return f"{folder_name}/{self.date.replace('-', '_')}.csv"

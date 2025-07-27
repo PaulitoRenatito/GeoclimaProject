@@ -6,6 +6,7 @@ import queue
 import os
 import webbrowser
 
+from geoclima_exporter.csv_exporter import CsvExporter
 from geoclima_weather.presentation import weather_controller
 from geoclima_exporter.excel_exporter import ExcelExporter
 
@@ -149,10 +150,7 @@ class WeatherApp:
             if dados_coletados:
                 self.comm_queue.put(('log', "Coleta finalizada. Exportando para Excel..."))
 
-                if not os.path.exists('excel'):
-                    os.makedirs('excel')
-
-                exporter = ExcelExporter(date=date_str, data=dados_coletados)
+                exporter = CsvExporter(date=date_str, data=dados_coletados)
                 exporter.export()
                 file_path = exporter.get_file_name()
                 self.comm_queue.put(('task_done', file_path))
