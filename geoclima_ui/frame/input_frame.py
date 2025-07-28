@@ -25,6 +25,13 @@ class InputFrame(customtkinter.CTkFrame):
         self.final_date_input = DateInput(self, label_text="Data Final (AAAA-MM-DD):", can_be_empty=True)
         self.final_date_input.grid(row=2, column=1, sticky="ew", pady=5, padx=5)
 
+        hint_label = customtkinter.CTkLabel(
+            self,
+            text="Dica: Deixe a Data Final em branco para coletar dados de um único dia.",
+            font=("", 12, "italic")
+        )
+        hint_label.grid(row=3, column=0, columnspan=2, sticky="w", padx=5, pady=(0, 5))
+
     def get_values(self):
         """Valida e retorna os valores dos inputs."""
         self.token_input.validate()

@@ -20,7 +20,8 @@ class WeatherApp(customtkinter.CTk):
         self.geometry("800x600")
         self.minsize(770, 550)
 
-        customtkinter.set_appearance_mode("light")
+        customtkinter.set_appearance_mode("dark")
+        customtkinter.set_default_color_theme("blue")
 
         self.comm_queue = queue.Queue()
         self.create_widgets()

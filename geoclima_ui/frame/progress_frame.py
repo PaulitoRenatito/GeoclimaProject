@@ -5,7 +5,7 @@ class ProgressFrame(customtkinter.CTkFrame):
         super().__init__(parent, fg_color="transparent", **kwargs)
         self.grid_columnconfigure(0, weight=1)
 
-        self.progress_bar = customtkinter.CTkProgressBar(self)
+        self.progress_bar = customtkinter.CTkProgressBar(self, height=10, corner_radius=4)
         self.progress_bar.set(0)
         self.progress_bar.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
         self.maximum = 100
