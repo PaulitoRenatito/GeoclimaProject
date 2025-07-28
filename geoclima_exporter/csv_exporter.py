@@ -63,8 +63,8 @@ class CsvExporter(Exporter):
         """
         Gera um nome de arquivo normalizado com base na data.
         """
-        if not os.path.exists('csv'):
-            os.makedirs('csv')
+        if not os.path.exists('output'):
+            os.makedirs('output')
 
-        folder_name = 'csv'
+        folder_name = 'output'
         return f"{folder_name}/{self.date.replace('-', '_')}.csv"

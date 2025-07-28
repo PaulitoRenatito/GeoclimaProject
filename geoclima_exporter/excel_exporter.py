@@ -58,8 +58,8 @@ class ExcelExporter(Exporter):
         """
         Generate a normalized file name based on station name and date range.
         """
-        if not os.path.exists('excel'):
-            os.makedirs('excel')
+        if not os.path.exists('output'):
+            os.makedirs('output')
 
-        folder_name = 'excel'
+        folder_name = 'output'
         return f"{folder_name}/{self.date.replace('-', '_')}.xlsx"

@@ -8,6 +8,7 @@ from geoclima_ui.frame.action_frame import ActionFrame
 from geoclima_ui.frame.input_frame import InputFrame
 from geoclima_ui.frame.log_frame import LogFrame
 from geoclima_ui.frame.progress_frame import ProgressFrame
+from geoclima_ui.frame.history_frame import HistoryFrame
 from geoclima_ui.input.exceptions import InputValidationError
 from geoclima_ui.task.get_export_data import get_export_data
 
@@ -32,17 +33,36 @@ class WeatherApp(customtkinter.CTk):
         self.grid_rowconfigure(3, weight=1)
 
         # --- Seções da UI ---
-        self.input_frame = InputFrame(self)
-        self.input_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
+        # --- Cria o sistema de abas ---
+        tab_view = customtkinter.CTkTabview(self, corner_radius=6)
+        tab_view.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        self.action_frame = ActionFrame(self, start_command=self.start_task)
-        self.action_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=10)
+        collector_tab = tab_view.add("Coleta de Dados")
+        history_tab = tab_view.add("Histórico")
 
-        self.progress_frame = ProgressFrame(self)
-        self.progress_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=10)
+        # --- Configura o layout das abas ---
+        collector_tab.grid_columnconfigure(0, weight=1)
+        collector_tab.grid_rowconfigure(3, weight=1)
 
-        self.log_frame = LogFrame(self)
-        self.log_frame.grid(row=3, column=0, sticky="nsew", padx=20, pady=(10, 20))
+        history_tab.grid_columnconfigure(0, weight=1)
+        history_tab.grid_rowconfigure(0, weight=1)
+
+        # --- Adiciona widgets à aba de Coleta ---
+        self.input_frame = InputFrame(collector_tab)
+        self.input_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 5))
+
+        self.action_frame = ActionFrame(collector_tab, start_command=self.start_task)
+        self.action_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=5)
+
+        self.progress_frame = ProgressFrame(collector_tab)
+        self.progress_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=5)
+
+        self.log_frame = LogFrame(collector_tab)
+        self.log_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=(5, 10))
+
+        # --- Adiciona widgets à aba de Histórico ---
+        self.history_frame = HistoryFrame(history_tab)
+        self.history_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
     def process_queue(self):
         try:
@@ -57,6 +77,7 @@ class WeatherApp(customtkinter.CTk):
                     self.progress_frame.step(data)
                 elif msg_type == 'task_done':
                     self.log_frame.show_success(data)
+                    self.history_frame.add_file_entry(data)
                 elif msg_type == 'task_error':
                     self.log_frame.show_error(data)
                 elif msg_type == 'enable_button':

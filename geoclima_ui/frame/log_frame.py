@@ -10,8 +10,8 @@ class LogFrame(customtkinter.CTkFrame):
         self.log_text = customtkinter.CTkTextbox(self, state="disabled", wrap="word", font=("", 18))
         self.log_text.grid(row=0, column=0, sticky="nsew")
 
-        self.log_text.tag_config("success", foreground="#4AA62B")
-        self.log_text.tag_config("error", foreground="#D10000")
+        self.log_text.tag_config("success", foreground="#55FF5D")
+        self.log_text.tag_config("error", foreground="#FF2E2E")
 
     def _log(self, message, tags=None):
         self.log_text.configure(state="normal")
