@@ -1,16 +1,20 @@
-# 🚀 Coletor de Dados Meteorológicos (Projeto Geoclima)
+# 🚀 Geoclima - Coletor de Dados Meteorológicos
 
-Um script em Python que automatiza a coleta de dados diários de estações meteorológicas do INMET, processa as informações e as salva em uma planilha Excel (`.xlsx`) limpa, organizada e pronta para análise.
+Uma aplicação de desktop que automatiza a coleta de dados diários de estações meteorológicas do INMET, processa as informações e as salva em arquivos CSV (.csv) limpos e organizados.
+
+<img src="res/geoclima_example.png" alt="Captura de Tela da Aplicao"></img>
 
 ---
 
 ## ✅ Funcionalidades Principais
 
--   **Busca por Data Específica**: Configure facilmente o dia para o qual os dados devem ser coletados.
--   **Coleta em Massa**: Consulta dezenas de estações de uma só vez, de forma automatizada.
--   **Exportação Inteligente para Excel**: Gera uma planilha `.xlsx` nativa, com tipos de dados corretos (números são números, não texto), colunas selecionadas e cabeçalhos renomeados para fácil leitura.
--   **Interface Amigável**: Exibe uma barra de progresso em tempo real durante a coleta.
--   **Design Resiliente**: Se a consulta a uma estação falhar, o script registra o erro e continua com as próximas, sem interromper todo o processo.
+- **Interface Gráfica Intuitiva**: Fácil de usar, com campos para token, datas e feedback em tempo real.
+- **Busca por Data ou Intervalo**: Colete dados de um único dia ou de um período específico.
+- **Coleta em Massa**: Consulta dezenas de estações de uma só vez, de forma automatizada.
+- **Exportação para CSV**: Gera um arquivo `.csv` para cada dia consultado, com colunas selecionadas e cabeçalhos renomeados para fácil leitura.
+- **Feedback em Tempo Real**: Acompanhe o progresso com uma barra de status e um log detalhado.
+- **Histórico de Arquivos**: Acesse e abra facilmente os arquivos gerados diretamente pela aplicação.
+- **Design Resiliente**: Se a consulta a uma estação falhar, o script registra o erro e continua com as próximas.
 
 ---
 
@@ -20,89 +24,40 @@ Siga os passos abaixo para deixar o ambiente pronto para execução.
 
 ### 1. Pré-requisitos
 
--   **Python**: Versão 3.11 ou superior é recomendada para máxima compatibilidade.
--   **Token da API do INMET**: Um token de acesso é necessário para fazer as consultas. Você pode obter o seu gratuitamente no [Portal do Desenvolvedor do INMET](https://portal.inmet.gov.br/dev).
+- **Python**: Versão 3.9 ou superior.
+- **Poetry**: Um gerenciador de dependências para Python. Siga as instruções de instalação oficiais.
+- **Token da API do INMET**: Um token de acesso é necessário para fazer as consultas. Você pode obter o seu gratuitamente no Portal do Desenvolvedor do INMET.
 
-### 2. Preparação do Ambiente
+### 2. Instalação do Projeto
 
 1.  **Clone o Repositório**
     Clone ou baixe os arquivos deste projeto para o seu computador.
 
-2.  **Instale as Dependências**
-    Abra um terminal na pasta raiz do projeto e execute o comando abaixo. Ele instalará todas as bibliotecas necessárias (`pandas`, `requests`, etc.).
     ```bash
-    pip install -r requirements.txt
+    git clone https://github.com/PaulitoRenatito/GeoclimaProject.git
+    cd GeoclimaProject
     ```
 
-### 3. Configuração do Projeto (Caso usar o terminal)
-
-Antes da primeira execução, dois arquivos precisam ser configurados:
-
-1.  **Seu Token de Acesso (Segredo)**
-    Por segurança, o token fica em uma pasta `env/` que é ignorada pelo Git. Você precisa criá-la manualmente.
-
-    -   **Passo 1:** Na raiz do projeto, **crie uma nova pasta** chamada `env`.
-    -   **Passo 2:** **Copie** o arquivo `secrets.py.example` (que está na raiz) para **dentro** da pasta `env`.
-    -   **Passo 3:** **Renomeie** o arquivo copiado para `secrets.py`.
-    -   **Passo 4:** Abra o novo arquivo `env/secrets.py` e substitua `"SEU_TOKEN_AQUI"` pelo seu token real.
-
-    A estrutura final deve ser esta:
+2.  **Instale as Dependências com Poetry** O Poetry lerá o arquivo `pyproject.toml`, criará um ambiente virtual e instalará todas as bibliotecas necessárias.
+    ```bash
+    poetry install
     ```
-    GeoclimaProject/
-    ├── env/
-    │   └── secrets.py  <-- Seu token está aqui
-    ├── main.py
-    └── ...
-    ```
-
-2.  **Parâmetros da Busca**
-    -   Abra o arquivo `config.py`.
-    -   Altere a variável `DATA_DA_BUSCA` para a data que você deseja consultar, usando o formato `"AAAA-MM-DD"`.
-
----
-
-## ▶️ Como Executar(UI)
-
-A maneira mais fácil e recomendada de usar o programa é através da interface gráfica. Abra o terminal na pasta do projeto e execute o seguinte comando:
-
-```bash
-python gui.py
-```
-
-1. Cole seu Token: No campo Token INMET, cole o código de acesso que você obteve do INMET. O campo esconderá os caracteres por segurança.
-2. Escolha a Data: O campo Data já vem preenchido com o dia de hoje. Altere se desejar buscar dados de outra data.
-3. Inicie a Coleta: Clique no botão azul Iniciar Coleta de Dados.]
-
-> A **barra de progresso** será preenchida à medida que os dados de cada estação são coletados.
-> 
-> A caixa de **Status** mostrará mensagens em tempo real, informando o que está acontecendo.
-> 
-> Ao final, a mensagem de resultado aparecerá na parte inferior. **Clique nela para abrir a planilha do Excel diretamente!**
 
 ---
 
 ## ▶️ Como Executar
 
-Com tudo configurado, abra o terminal na raiz do projeto e execute o script principal:
+Com tudo instalado, execute a aplicação com o seguinte comando do Poetry, que garante que o script rode no ambiente virtual correto:
 
 ```bash
-python main.py
+poetry run python gui.py
 ```
 
-O script iniciará o processo, exibindo a barra de progresso. Ao final, uma mensagem de sucesso será exibida e sua planilha será salva na pasta `excel/`, com um nome no formato `AAAA_MM_DD.xlsx`.
+### Usando a Aplicação
+1. **Cole seu Token**: No campo "Token INMET", cole o código de acesso que você obteve.
+2. **Escolha as Datas**:
+   - Para um único dia, preencha apenas a "Data Inicial".
+   - Para um período, preencha a "Data Inicial" e a "Data Final".
+3. **Inicie a Coleta**: Clique no botão "Iniciar Coleta de Dados".
 
----
-
-## 🔧 Solução de Problemas Comuns
-
--   **`ImportError: No module named 'pandas'` (ou outro módulo)**
-    > **Causa**: As dependências não foram instaladas corretamente.
-    > **Solução**: Certifique-se de que você executou `pip install -r requirements.txt` no ambiente virtual correto do seu projeto.
-
--   **`ImportError: cannot import name 'token' from 'secrets'`**
-    > **Causa**: O arquivo `env/secrets.py` não foi criado ou configurado corretamente.
-    > **Solução**: Siga atentamente os 4 passos na seção "Seu Token de Acesso (Segredo)". Verifique se a pasta se chama `env` e o arquivo `secrets.py`.
-
--   **O script roda, mas nenhum arquivo é gerado.**
-    > **Causa**: A API do INMET pode não ter retornado dados para a data consultada.
-    > **Solução**: Verifique no terminal se a mensagem "Nenhum dado foi coletado" foi exibida. Tente executar para uma data diferente.
+A barra de progresso e a caixa de log mostrarão o andamento. Ao final, os arquivos gerados aparecerão na aba "Histórico" e serão salvos na pasta `output/`.
