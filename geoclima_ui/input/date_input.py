@@ -13,7 +13,10 @@ class DateInput(LabeledInput):
         """Valida se o texto do Entry está no formato AAAA-MM-DD."""
         value = self.get()
 
-        if not value and not self.can_be_empty:
+        if self.can_be_empty:
+            return None
+
+        if not value:
             raise InputValidationError("O campo de data não pode estar vazio")
 
         if value == datetime.today().strftime('%Y-%m-%d'):

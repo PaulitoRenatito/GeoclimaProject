@@ -1,5 +1,6 @@
 import queue
 import threading
+import customtkinter
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -11,66 +12,36 @@ from geoclima_ui.input.exceptions import InputValidationError
 from geoclima_ui.task.get_export_data import get_export_data
 
 
-class WeatherApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Geoclima - Coletor de Dados Meteorológicos")
-        photo = tk.PhotoImage(file="res/geoclima_only_icon.png")
-        root.iconphoto(False, photo)
-        self.root.geometry("770x550")
-        self.root.minsize(770, 550)
+class WeatherApp(customtkinter.CTk):
+    def __init__(self):
+        super().__init__()
 
-        # Fila para comunicação segura entre a thread de trabalho e a GUI
+        self.title("Geoclima - Coletor de Dados Meteorológicos")
+        self.geometry("800x600")
+        self.minsize(770, 550)
+
+        customtkinter.set_appearance_mode("light")
+
         self.comm_queue = queue.Queue()
-
         self.create_widgets()
-
-        # Inicia o loop para verificar a fila de comunicação
-        self.root.after(100, self.process_queue)
+        self.after(100, self.process_queue)
 
     def create_widgets(self):
-        main_frame = ttk.Frame(self.root, padding="15")
-        main_frame.pack(fill=tk.BOTH, expand=True)
-
-        main_frame.grid_columnconfigure(0, weight=1)
-        main_frame.grid_rowconfigure(3, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(3, weight=1)
 
         # --- Seções da UI ---
-        self.input_frame = InputFrame(main_frame)
-        self.input_frame.grid(
-            row=0,
-            column=0,
-            sticky="ew",
-            padx=5,
-            pady=5,
-        )
+        self.input_frame = InputFrame(self)
+        self.input_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
 
-        self.action_frame = ActionFrame(main_frame, start_command=self.start_task)
-        self.action_frame.grid(
-            row=1,
-            column=0,
-            sticky="ew",
-            padx=5,
-            pady=15,
-        )
+        self.action_frame = ActionFrame(self, start_command=self.start_task)
+        self.action_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=10)
 
-        self.progress_frame = ProgressFrame(main_frame)
-        self.progress_frame.grid(
-            row=2,
-            column=0,
-            sticky="ew",
-            padx=5,
-            pady=5,
-        )
+        self.progress_frame = ProgressFrame(self)
+        self.progress_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=10)
 
-        self.log_frame = LogFrame(main_frame)
-        self.log_frame.grid(
-            row=3,
-            column=0,
-            sticky="nsew",
-            padx=5,
-            pady=5,
-        )
+        self.log_frame = LogFrame(self)
+        self.log_frame.grid(row=3, column=0, sticky="nsew", padx=20, pady=(10, 20))
 
     def process_queue(self):
         try:
@@ -92,7 +63,7 @@ class WeatherApp:
         except queue.Empty:
             pass
         finally:
-            self.root.after(100, self.process_queue)
+            self.after(100, self.process_queue)
 
     def start_task(self):
         try:
@@ -120,6 +91,5 @@ class WeatherApp:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = WeatherApp(root)
-    root.mainloop()
+    app = WeatherApp()
+    app.mainloop()

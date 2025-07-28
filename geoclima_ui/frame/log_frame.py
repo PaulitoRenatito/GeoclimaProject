@@ -1,42 +1,34 @@
-import os
-import tkinter as tk
-import webbrowser
-from datetime import datetime
-from tkinter import ttk, scrolledtext, messagebox
+import customtkinter
 
 
-class LogFrame(ttk.LabelFrame):
+class LogFrame(customtkinter.CTkFrame):
     def __init__(self, parent, **kwargs):
-        super().__init__(parent, text="3. Status e Resultado", padding="10", **kwargs)
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
+        super().__init__(parent, **kwargs)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
-        self.log_area = scrolledtext.ScrolledText(self, state='disabled', wrap=tk.WORD, height=10)
-        self.log_area.grid(row=0, column=0, sticky="nsew", pady=(0, 10))
+        self.log_text = customtkinter.CTkTextbox(self, state="disabled", wrap="word", font=("", 18))
+        self.log_text.grid(row=0, column=0, sticky="nsew")
 
-        self.result_label = ttk.Label(self, text="Aguardando resultado...", anchor="w")
-        self.result_label.grid(row=1, column=0, sticky="ew")
+        self.log_text.tag_config("success", foreground="lightgreen")
+        self.log_text.tag_config("error", foreground="#FF5555")
+
+    def _log(self, message, tags=None):
+        self.log_text.configure(state="normal")
+        self.log_text.insert("end", message + "\n", tags)
+        self.log_text.configure(state="disabled")
+        self.log_text.see("end")
 
     def log_message(self, message):
-        self.log_area.config(state='normal')
-        self.log_area.insert(tk.END, f"[{datetime.now().strftime('%H:%M:%S')}] {message}\n")
-        self.log_area.config(state='disabled')
-        self.log_area.see(tk.END)
+        self._log(f"INFO: {message}")
 
-    def show_success(self, file_path):
-        full_path = os.path.abspath(file_path)
-        self.result_label.config(text=f"Sucesso! Planilha salva em: {full_path}", foreground="blue", cursor="hand2")
-        self.result_label.bind("<Button-1>", lambda e: webbrowser.open(f"file:///{full_path}"))
-        self.log_message("Processo concluído com sucesso!")
-        messagebox.showinfo("Concluído", f"A planilha foi gerada com sucesso!\n\nLocal: {full_path}")
+    def show_success(self, message):
+        self._log(f"SUCESSO: {message}", "success")
 
-    def show_error(self, error_message):
-        messagebox.showerror("Erro na Execução", error_message)
-        self.result_label.config(text=f"Falha: {error_message}", foreground="red")
+    def show_error(self, message):
+        self._log(f"ERRO: {message}", "error")
 
     def reset(self):
-        self.log_area.config(state='normal')
-        self.log_area.delete('1.0', tk.END)
-        self.log_area.config(state='disabled')
-        self.result_label.config(text="Processando...", foreground="black", cursor="")
-        self.result_label.unbind("<Button-1>")
+        self.log_text.configure(state="normal")
+        self.log_text.delete("1.0", "end")
+        self.log_text.configure(state="disabled")
