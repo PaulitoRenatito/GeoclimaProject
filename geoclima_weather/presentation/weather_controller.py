@@ -1,8 +1,7 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from queue import Queue
 from typing import Optional, List
 
-from config import INTERVALO_ENTRE_REQUISICOES
 from geoclima_weather.presentation.model.weather_data_request import WeatherDataRequest
 from ..application import weather_data_service
 from ..domain.weather_data import WeatherData
@@ -33,10 +32,12 @@ def start_weather_data_collection(
         for name, code in mg_stations_dict.items()
     ]
 
+    time_between_requests = 0.8
+
     dados_coletados: list[list[WeatherData]] = weather_data_service.get_weather_data_intermittently(
         requests,
         token,
-        INTERVALO_ENTRE_REQUISICOES,
+        time_between_requests,
         progress_queue=progress_queue
     )
 

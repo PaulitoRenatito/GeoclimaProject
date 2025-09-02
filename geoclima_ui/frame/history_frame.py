@@ -23,6 +23,9 @@ class HistoryFrame(customtkinter.CTkFrame):
         self.scrollable_frame = customtkinter.CTkScrollableFrame(self)
         self.scrollable_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
+        self.list_container = customtkinter.CTkFrame(self.scrollable_frame)
+        self.list_container.pack(fill="both", expand=True)
+
         self.populate_history()
 
     def populate_history(self):

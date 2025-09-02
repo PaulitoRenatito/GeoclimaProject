@@ -40,7 +40,7 @@ def get_export_data(
                 exported_files.append(file_path)
                 comm_queue.put(('log', f"Arquivo '{file_path}' exportado."))
 
-            comm_queue.put(('task_done', "Exportação concluída. Arquivos salvos na pasta 'csv'."))
+            comm_queue.put(('task_done', "Exportação concluída. Arquivos salvos na pasta 'output'."))
         else:
             comm_queue.put(('task_error', "Nenhum dado foi retornado pela API. Verifique a data e o token."))
 

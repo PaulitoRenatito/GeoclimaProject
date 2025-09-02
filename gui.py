@@ -1,8 +1,7 @@
 import queue
 import threading
 import customtkinter
-import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
 
 from geoclima_ui.frame.action_frame import ActionFrame
 from geoclima_ui.frame.input_frame import InputFrame
