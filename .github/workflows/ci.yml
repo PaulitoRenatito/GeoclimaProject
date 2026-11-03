@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    # Windows is the target platform, and its runners have a display, so the Tk smoke tests run too.
+    # Windows is the target platform. Qt tests run offscreen (QT_QPA_PLATFORM, set in tests/conftest.py).
     runs-on: windows-latest
     strategy:
       fail-fast: false

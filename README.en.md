@@ -28,7 +28,7 @@ The interface is in Brazilian Portuguese.
 - **Token stored securely** in Windows Credential Manager (optional), never in plain text.
 - **History**: open a file, show it in Explorer, or visualize any past export.
 - **Charts**: highlights of the period, station ranking, and daily evolution against the average.
-- **Map**: stations colored by the chosen metric; click a marker to see its value.
+- **Map**: stations colored by the chosen metric, with a legend, zoom and drag; click a marker to see its value.
 - **Resilient**: a failing station is logged and skipped; API calls use timeouts, retries with
   backoff, and a minimum interval between requests.
 
@@ -52,8 +52,8 @@ be tested without network access and without a window.
 
 ```mermaid
 flowchart LR
-    subgraph UI["ui (customtkinter)"]
-        App[WeatherApp<br/>tabs and form]
+    subgraph UI["ui (PySide6 + pyqtgraph)"]
+        App[MainWindow<br/>pages and form]
         Worker[worker<br/>collection thread]
     end
     subgraph APP["weather.application"]
@@ -69,7 +69,7 @@ flowchart LR
     INMET[[INMET API]]
 
     App -- CollectionJob --> Worker
-    Worker -- "queue.Queue[WorkerMessage]" --> App
+    Worker -- "MessageBridge (Qt signal)" --> App
     Worker --> Collect --> Client --> INMET
     Worker --> Exporter
     App --> Catalog --> Client
@@ -79,9 +79,10 @@ flowchart LR
 
 ### Technical decisions
 
-- **A worker thread and a queue, instead of touching the UI from the worker.** Tkinter is not
-  thread-safe. Collection runs on a daemon thread and only talks to the window through a
-  `queue.Queue` of typed messages, which the main loop drains every 100 ms.
+- **A worker thread and a signal, instead of touching the UI from the worker.** Qt widgets belong
+  to the main thread. Collection runs on a daemon thread and sends typed messages to a
+  `MessageBridge`, a `QObject` whose signal Qt delivers on the window's thread. The worker knows
+  nothing about Qt: it just calls `put()`, as it would on a queue.
 - **A use case with injected dependencies.** `collect_weather_data` receives the fetch function, a
   progress listener and a cancellation `threading.Event`. Tests swap the API for a fake, and
   cancelling also interrupts the wait between requests.
@@ -92,8 +93,12 @@ flowchart LR
   URL, and the saved token lives in the system keyring.
 - **Graceful catalog fallback**: fresh cache → API → stale cache → built-in list for Minas Gerais.
   The app starts even offline.
-- **A map that follows OpenStreetMap's tile policy.** `tkintermapview` sends a User-Agent that OSM
-  blocks; a custom fetcher identifies the app and keeps a local tile cache.
+- **A native map, no embedded browser.** The map is painted with `QPainter` in Web Mercator, with
+  OpenStreetMap tiles downloaded on a thread pool. Skipping QtWebEngine (Leaflet) keeps the
+  executable around 80 MB. Downloads follow the OSM tile policy: an identifying User-Agent, few
+  connections and a 30-day local cache.
+- **A UI that is tested without a screen.** Tests run with `QT_QPA_PLATFORM=offscreen` and
+  pytest-qt; the network (API and tiles) and threads are injected, so the whole suite runs in seconds.
 
 ## Development
 
@@ -119,7 +124,7 @@ it to the release.
 
 ```
 src/geoclima/
-├── ui/                  # window, tabs, widgets, worker and messages
+├── ui/                  # Qt window, pages, widgets (map, selector), theme, worker and messages
 ├── weather/
 │   ├── domain/          # models (WeatherData, Station)
 │   ├── application/     # collection use case and aggregations
@@ -127,7 +132,7 @@ src/geoclima/
 ├── exporter/            # CSV, Excel and reading exports back
 ├── credentials.py       # token in the keyring
 └── preferences.py       # the user's last choices
-tests/                   # pytest, no network (responses), one shared Tk window
+tests/                   # pytest + pytest-qt (offscreen), no network
 ```
 
 ## License

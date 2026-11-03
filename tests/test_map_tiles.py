@@ -16,10 +16,10 @@ def test_downloads_with_identifying_user_agent_and_caches(tmp_path):
     responses.get(URL, body=b"PNG-1")
     fetcher = TileFetcher(cache_dir=tmp_path)
 
-    first = fetcher.get(URL, stream=True, headers={"User-Agent": "TkinterMapView"})
-    second = fetcher.get(URL)
+    first = fetcher.fetch(URL)
+    second = fetcher.fetch(URL)
 
-    assert first.raw.read() == second.raw.read() == b"PNG-1"
+    assert first == second == b"PNG-1"
     assert len(responses.calls) == 1
     assert responses.calls[0].request.headers["User-Agent"] == USER_AGENT
     assert "Geoclima/" in USER_AGENT
@@ -30,32 +30,18 @@ def test_expired_cache_is_downloaded_again(tmp_path):
     responses.get(URL, body=b"PNG-1")
     responses.get(URL, body=b"PNG-2")
     fetcher = TileFetcher(cache_dir=tmp_path)
-    fetcher.get(URL)
+    fetcher.fetch(URL)
     (cached,) = tmp_path.iterdir()
     old = time.time() - map_tiles.CACHE_TTL_SECONDS - 10
     os.utime(cached, (old, old))
 
-    assert fetcher.get(URL).raw.read() == b"PNG-2"
+    assert fetcher.fetch(URL) == b"PNG-2"
 
 
 @responses.activate
-def test_http_errors_raise_so_the_map_shows_an_empty_tile(tmp_path):
+def test_http_errors_raise_and_are_not_cached(tmp_path):
     responses.get(URL, status=403)
 
     with pytest.raises(requests.HTTPError):
-        TileFetcher(cache_dir=tmp_path).get(URL)
+        TileFetcher(cache_dir=tmp_path).fetch(URL)
     assert not list(tmp_path.iterdir())
-
-
-def test_install_replaces_requests_inside_tkintermapview():
-    from tkintermapview import map_widget
-
-    original = map_widget.requests
-    fetcher = TileFetcher()
-    try:
-        map_tiles.install(fetcher)
-        assert map_widget.requests is fetcher
-        # tkintermapview's own except clauses must keep resolving.
-        assert map_widget.requests.exceptions.ConnectionError is requests.exceptions.ConnectionError
-    finally:
-        map_widget.requests = original

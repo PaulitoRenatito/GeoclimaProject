@@ -1,20 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Build: poetry run pyinstaller geoclima.spec  ->  dist/Geoclima.exe
-from PyInstaller.utils.hooks import collect_data_files
 
 a = Analysis(
     ['src/geoclima/__main__.py'],
     pathex=['src'],
     binaries=[],
-    # customtkinter loads its theme .json files at runtime, and tkintermapview its marker icons.
-    datas=collect_data_files('customtkinter') + collect_data_files('tkintermapview'),
-    # Imported lazily or by name, so the analysis does not see them: tkcalendar's locale data,
-    # the keyring backend for the Windows Credential Manager, and the map widget itself.
-    hiddenimports=['babel.numbers', 'keyring.backends.Windows', 'tkintermapview'],
+    # The stylesheet points at the check mark SVG on disk.
+    datas=[('src/geoclima/ui/assets', 'geoclima/ui/assets')],
+    # Loaded by name at runtime, so the analysis does not see it: the Windows Credential Manager backend.
+    hiddenimports=['keyring.backends.Windows'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # Not used since the move to Qt; keeps them out even if some dependency imports them optionally.
+    excludes=['tkinter', 'matplotlib'],
     noarchive=False,
     optimize=0,
 )
