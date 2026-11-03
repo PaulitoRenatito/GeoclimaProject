@@ -28,6 +28,7 @@ mg_stations_dict: dict[str, str] = {
     'TRES MARIAS': 'A528',
     'UNAI': 'A542',
     'ESPINOSA': 'A543',
+    'FORMOSO': 'A039',
     'JANUARIA': 'A559',
     'MOCAMBINHO': 'A539',
     'MONTALVANIA': 'A526',
