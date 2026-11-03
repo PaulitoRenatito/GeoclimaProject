@@ -10,7 +10,7 @@ import customtkinter
 import pytest
 
 from geoclima.credentials import TokenStore
-from geoclima.exporter.service import ExportFormat, ExportMode
+from geoclima.exporter.service import ExportFormat, ExportMode, export_records
 from geoclima.preferences import Preferences
 from geoclima.ui import app as app_module
 from geoclima.ui.frames import history_frame as history_module
@@ -20,7 +20,7 @@ from geoclima.ui.messages import MessageType, WorkerMessage
 from geoclima.ui.widgets.exceptions import InputValidationError
 from geoclima.weather.domain.models import Station
 from geoclima.weather.infrastructure.station_catalog import CatalogResult, CatalogSource
-from tests.conftest import FakeKeyring
+from tests.conftest import FakeKeyring, make_record
 
 STATIONS = [
     Station(code="A565", name="BAMBUI", state="MG", status="Operante"),
@@ -56,6 +56,34 @@ class FakeThread:
         FakeThread.started["running"] = True
 
 
+class FakeMap:
+    """Stands in for TkinterMapView, which downloads tiles."""
+
+    def __init__(self, parent):
+        self.markers = []
+        self.bounds = None
+
+    def grid(self, **kwargs):
+        pass
+
+    def delete_all_marker(self):
+        self.markers = []
+
+    def set_marker(self, lat, lon, text, command, **style):
+        self.markers.append(
+            {"position": (lat, lon), "text": text, "command": command, "color": style["marker_color_circle"]}
+        )
+
+    def fit_bounding_box(self, top_left, bottom_right):
+        self.bounds = (top_left, bottom_right)
+
+    def set_position(self, lat, lon):
+        self.bounds = (lat, lon)
+
+    def set_zoom(self, zoom):
+        pass
+
+
 KEYRING = FakeKeyring()
 
 
@@ -69,6 +97,7 @@ def window(tmp_path_factory):
             catalog=FakeCatalog(),
             token_store=TokenStore(KEYRING),
             preferences_path=tmp_path_factory.mktemp("appdata") / "preferences.json",
+            map_factory=FakeMap,
         )
     except tkinter.TclError as e:
         pytest.skip(f"Tk unavailable: {e}")
@@ -96,6 +125,8 @@ def app(window):
     for path in window.output_dir.iterdir():
         path.unlink()
     window.history_frame.populate_history()
+    window.show_records([])
+    window.tab_view.set("Coleta de Dados")
     return window
 
 
@@ -333,3 +364,99 @@ def test_history_row_actions(app, monkeypatch):
 @pytest.mark.parametrize(("size", "text"), [(10, "10 B"), (1536, "1.5 KB"), (3 * 1024 * 1024, "3.0 MB")])
 def test_format_size(size, text):
     assert format_size(size) == text
+
+
+def sample(day, code, name, temp_max, precipitation, with_position=True):
+    record = make_record(day, code, name).model_copy(update={"temp_max": temp_max, "precipitation": precipitation})
+    return record if with_position else record.model_copy(update={"latitude": None, "longitude": None})
+
+
+def test_collected_records_feed_charts_and_map(app):
+    day = date(2025, 8, 28)
+    records = [sample(day, "A565", "BAMBUI", 31.0, 2.0), sample(day, "A521", "BELO HORIZONTE - PAMPULHA", 28.0, 9.0)]
+
+    app.comm_queue.put(WorkerMessage(MessageType.RECORDS_COLLECTED, records))
+    pump(app, lambda: app.charts_frame.records)
+
+    charts = app.charts_frame
+    assert charts.dataset_label.cget("text") == "Última coleta: 2 estação(ões) · 28/08/2025 · 2 registro(s)"
+    assert len(charts.cards.winfo_children()) == 4
+    assert charts.station_menu.cget("values") == ["Média das estações", "BAMBUI", "BELO HORIZONTE - PAMPULHA"]
+
+    charts.view_button.set("Ao longo do período")
+    charts.station_menu.set("BAMBUI")
+    charts.redraw()
+    assert charts.station_menu.cget("state") == "normal"
+    assert charts.figure.axes[0].get_title(loc="left") == "Temperatura máxima · BAMBUI (°C)"
+    charts.view_button.set("Por estação")
+    charts.redraw()
+    assert "média do período" in charts.figure.axes[0].get_title(loc="left")
+
+
+def test_map_is_created_on_first_visit_and_uses_catalog_coordinates(app):
+    day = date(2025, 8, 28)
+    station = Station(code="A777", name="SEM POSICAO", state="MG", latitude=-19.5, longitude=-44.0)
+    app.station_selector.stations.append(station)
+    try:
+        app.show_records(
+            [sample(day, "A565", "BAMBUI", 31.0, 2.0), sample(day, "A777", "SEM POSICAO", 25.0, 0.0, False)]
+        )
+        app.tab_view.set("Mapa")
+        app.on_tab_change()
+    finally:
+        app.station_selector.stations.remove(station)
+
+    fake_map = app.map_frame.map_widget
+    assert isinstance(fake_map, FakeMap)
+    assert [m["text"] for m in fake_map.markers] == ["31", "25"]
+    assert fake_map.markers[1]["position"] == (-19.5, -44.0)
+    pump(app, lambda: fake_map.bounds)
+
+    fake_map.markers[0]["command"](None)
+    assert app.map_frame.info_label.cget("text").startswith("BAMBUI (A565): 31.0 °C")
+
+    app.map_frame.metric_menu.set("Precipitação acumulada")
+    app.map_frame.render()
+    assert [m["text"] for m in fake_map.markers] == ["2", "0"]
+
+
+def test_map_without_coordinates(app):
+    app.map_frame.show()
+    app.show_records([sample(date(2025, 8, 28), "X1", "NENHUMA", 30.0, 1.0, False)])
+
+    assert app.map_frame.map_widget.markers == []
+    assert app.map_frame.info_label.cget("text") == "Nenhuma estação com coordenadas para exibir."
+
+
+def test_visualize_from_history(app, monkeypatch):
+    (path,) = export_records([make_record(date(2025, 8, 28))], ExportFormat.CSV, ExportMode.SINGLE_FILE, app.output_dir)
+    app.history_frame.populate_history()
+
+    buttons = row_buttons(app, path.name)
+    buttons["Visualizar"].invoke()
+
+    assert app.tab_view.get() == "Gráficos"
+    assert app.charts_frame.dataset_label.cget("text").startswith(f"{path.name}: 1 estação(ões)")
+
+
+def test_visualize_invalid_file_shows_error(app, monkeypatch):
+    errors = []
+    monkeypatch.setattr(app_module.messagebox, "showerror", lambda title, message: errors.append(message))
+    path = app.output_dir / "outro.csv"
+    path.write_text("a,b\n1,2\n")
+
+    app.visualize_file(path)
+
+    assert "não parece ser um arquivo exportado" in errors[0]
+    assert app.tab_view.get() == "Coleta de Dados"
+
+
+def test_open_file_button_loads_the_chosen_file(app, monkeypatch):
+    loaded = []
+    monkeypatch.setattr(app.charts_frame, "on_load_file", loaded.append)
+    monkeypatch.setattr("geoclima.ui.frames.charts_frame.filedialog.askopenfilename", lambda **_: "C:/x/MG.csv")
+    app.charts_frame.choose_file()
+    monkeypatch.setattr("geoclima.ui.frames.charts_frame.filedialog.askopenfilename", lambda **_: "")
+    app.charts_frame.choose_file()
+
+    assert [p.name for p in loaded] == ["MG.csv"]

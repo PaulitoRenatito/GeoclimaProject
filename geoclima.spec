@@ -6,9 +6,11 @@ a = Analysis(
     ['src/geoclima/__main__.py'],
     pathex=['src'],
     binaries=[],
-    # customtkinter loads its theme .json files at runtime, so they must be bundled.
-    datas=collect_data_files('customtkinter'),
-    hiddenimports=[],
+    # customtkinter loads its theme .json files at runtime, and tkintermapview its marker icons.
+    datas=collect_data_files('customtkinter') + collect_data_files('tkintermapview'),
+    # Imported lazily or by name, so the analysis does not see them: tkcalendar's locale data,
+    # the keyring backend for the Windows Credential Manager, and the map widget itself.
+    hiddenimports=['babel.numbers', 'keyring.backends.Windows', 'tkintermapview'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

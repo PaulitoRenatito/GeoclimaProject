@@ -1,26 +1,34 @@
 import queue
 import threading
+from collections.abc import Callable
 from pathlib import Path
 from tkinter import messagebox
+from typing import Any
 
 import customtkinter
 
 from geoclima.credentials import TokenStore
+from geoclima.exporter.reader import ExportReadError, read_export
 from geoclima.preferences import PREFERENCES_PATH, Preferences
 from geoclima.settings import OUTPUT_DIR
 from geoclima.ui.frames.action_frame import ActionFrame
+from geoclima.ui.frames.charts_frame import ChartsFrame
 from geoclima.ui.frames.export_options_frame import ExportOptionsFrame
 from geoclima.ui.frames.history_frame import HistoryFrame
 from geoclima.ui.frames.input_frame import InputFrame
 from geoclima.ui.frames.log_frame import LogFrame
+from geoclima.ui.frames.map_frame import MapFrame, create_map_widget
 from geoclima.ui.frames.progress_frame import ProgressFrame
 from geoclima.ui.frames.station_selector_frame import StationSelectorFrame
 from geoclima.ui.messages import MessageType, WorkerMessage
 from geoclima.ui.widgets.exceptions import InputValidationError
 from geoclima.ui.worker import CollectionJob, run_collection
+from geoclima.weather.domain.models import WeatherData
 from geoclima.weather.infrastructure.station_catalog import StationCatalog
 
 QUEUE_POLL_MS = 100
+CHARTS_TAB = "Gráficos"
+MAP_TAB = "Mapa"
 
 
 class WeatherApp(customtkinter.CTk):
@@ -30,6 +38,7 @@ class WeatherApp(customtkinter.CTk):
         catalog: StationCatalog | None = None,
         token_store: TokenStore | None = None,
         preferences_path: Path = PREFERENCES_PATH,
+        map_factory: Callable[[Any], Any] = create_map_widget,
     ):
         super().__init__()
         self.output_dir = output_dir
@@ -38,6 +47,7 @@ class WeatherApp(customtkinter.CTk):
         self.preferences_path = preferences_path
         self.preferences = Preferences.load(preferences_path)
         self.current_job: CollectionJob | None = None
+        self.map_factory = map_factory
 
         self.title("Geoclima - Coletor de Dados Meteorológicos")
         self.geometry("1100x760")
@@ -58,11 +68,16 @@ class WeatherApp(customtkinter.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.tab_view = customtkinter.CTkTabview(self, corner_radius=6)
+        self.tab_view = customtkinter.CTkTabview(self, corner_radius=6, command=self.on_tab_change)
         self.tab_view.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         collector_tab = self.tab_view.add("Coleta de Dados")
         history_tab = self.tab_view.add("Histórico")
+        charts_tab = self.tab_view.add(CHARTS_TAB)
+        map_tab = self.tab_view.add(MAP_TAB)
+        for tab in (charts_tab, map_tab):
+            tab.grid_columnconfigure(0, weight=1)
+            tab.grid_rowconfigure(0, weight=1)
 
         collector_tab.grid_columnconfigure(0, weight=3, uniform="columns")
         collector_tab.grid_columnconfigure(1, weight=2, uniform="columns")
@@ -89,8 +104,37 @@ class WeatherApp(customtkinter.CTk):
         self.log_frame = LogFrame(collector_tab)
         self.log_frame.grid(row=4, column=0, sticky="nsew", padx=10, pady=(5, 10))
 
-        self.history_frame = HistoryFrame(history_tab, output_dir=self.output_dir)
+        self.history_frame = HistoryFrame(history_tab, output_dir=self.output_dir, on_visualize=self.visualize_file)
         self.history_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+        self.charts_frame = ChartsFrame(charts_tab, on_load_file=self.visualize_file, output_dir=self.output_dir)
+        self.charts_frame.grid(row=0, column=0, sticky="nsew")
+
+        self.map_frame = MapFrame(map_tab, map_factory=self.map_factory)
+        self.map_frame.grid(row=0, column=0, sticky="nsew")
+
+    def on_tab_change(self):
+        if self.tab_view.get() == MAP_TAB:
+            self.map_frame.show()
+
+    def show_records(self, records: list[WeatherData], source: str = "Última coleta") -> None:
+        """Feeds the charts and the map. Catalog coordinates fill in stations without a position."""
+        coordinates = {
+            s.code: (s.latitude, s.longitude)
+            for s in self.station_selector.stations
+            if s.latitude is not None and s.longitude is not None
+        }
+        self.charts_frame.set_records(records, source)
+        self.map_frame.set_records(records, coordinates)
+
+    def visualize_file(self, path: Path) -> None:
+        try:
+            records = read_export(path)
+        except ExportReadError as e:
+            messagebox.showerror("Arquivo inválido", str(e))
+            return
+        self.show_records(records, path.name)
+        self.tab_view.set(CHARTS_TAB)
 
     def apply_preferences(self):
         self.export_options.set_values(self.preferences.format, self.preferences.mode)
@@ -149,7 +193,7 @@ class WeatherApp(customtkinter.CTk):
             case MessageType.STATIONS_LOADED:
                 self.station_selector.set_catalog(message.payload, preferred_state=self.preferences.state)
             case MessageType.RECORDS_COLLECTED:
-                pass  # consumed by the visualization tabs
+                self.show_records(message.payload)
 
     def build_job(self) -> CollectionJob:
         token, initial_date, final_date = self.input_frame.get_values()
