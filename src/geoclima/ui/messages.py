@@ -12,6 +12,7 @@ class MessageType(Enum):
     TASK_DONE = auto()  # payload: success message
     TASK_ERROR = auto()  # payload: error message
     TASK_FINISHED = auto()  # always sent last, success or not
+    STATIONS_LOADED = auto()  # payload: CatalogResult
 
 
 @dataclass(frozen=True)

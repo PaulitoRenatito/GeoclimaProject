@@ -47,6 +47,31 @@ class WeatherData(BaseModel):
         return value
 
 
+class Station(BaseModel):
+    """An INMET weather station, as listed by the station catalog."""
+
+    model_config = ConfigDict(populate_by_name=True, frozen=True)
+
+    code: str = Field(alias="CD_ESTACAO")
+    name: str = Field(alias="DC_NOME")
+    state: str = Field(alias="SG_ESTADO")
+    latitude: float | None = Field(default=None, alias="VL_LATITUDE")
+    longitude: float | None = Field(default=None, alias="VL_LONGITUDE")
+    status: str | None = Field(default=None, alias="CD_SITUACAO")
+
+    @field_validator("latitude", "longitude", mode="before")
+    @classmethod
+    def blank_to_none(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @property
+    def is_operational(self) -> bool:
+        """Stations "em pane" (out of order) usually return no data. Unknown status counts as operational."""
+        return self.status is None or self.status.strip().lower() == "operante"
+
+
 class WeatherDataRequest(BaseModel):
     """Request for the daily records of one station over a date range (inclusive)."""
 

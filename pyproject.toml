@@ -12,7 +12,11 @@ dependencies = [
     "requests (>=2.32.4,<3.0.0)",
     "pydantic (>=2.11.7,<3.0.0)",
     "customtkinter (>=5.2.2,<6.0.0)",
-    "openpyxl (>=3.1.5,<4.0.0)"
+    "openpyxl (>=3.1.5,<4.0.0)",
+    "tkcalendar (>=1.6.1,<2.0.0)",
+    "keyring (>=25.7.0,<26.0.0)",
+    "matplotlib (>=3.11.2,<4.0.0)",
+    "tkintermapview (>=1.30,<2.0)"
 ]
 
 [project.scripts]

@@ -1,5 +1,6 @@
 """Smoke tests of the real Tk window. Skipped where no display is available."""
 
+import time
 import tkinter
 from datetime import date, timedelta
 
@@ -8,6 +9,29 @@ import pytest
 from geoclima.ui import app as app_module
 from geoclima.ui.messages import MessageType, WorkerMessage
 from geoclima.ui.widgets.exceptions import InputValidationError
+from geoclima.weather.domain.models import Station
+from geoclima.weather.infrastructure.station_catalog import CatalogResult, CatalogSource
+
+STATIONS = [
+    Station(code="A565", name="BAMBUI", state="MG", status="Operante"),
+    Station(code="A521", name="BELO HORIZONTE - PAMPULHA", state="MG", status="Operante"),
+    Station(code="A999", name="QUEBRADA", state="MG", status="Pane"),
+    Station(code="A422", name="ABROLHOS", state="BA", status="Operante"),
+]
+
+
+class FakeCatalog:
+    def load(self, force_refresh=False):
+        return CatalogResult(STATIONS, CatalogSource.STALE_CACHE)
+
+
+def pump(window, until, timeout=5.0):
+    """Runs the Tk loop until the condition holds (background threads report through the queue)."""
+    deadline = time.monotonic() + timeout
+    while not until():
+        assert time.monotonic() < deadline, "timed out waiting for the window"
+        window.update()
+        window.process_queue()
 
 
 @pytest.fixture(scope="module")
@@ -15,10 +39,11 @@ def window(tmp_path_factory):
     # One window per module: creating a Tk root per test fails intermittently on Windows
     # ("Can't find a usable init.tcl").
     try:
-        window = app_module.WeatherApp(output_dir=tmp_path_factory.mktemp("output"))
+        window = app_module.WeatherApp(output_dir=tmp_path_factory.mktemp("output"), catalog=FakeCatalog())
     except tkinter.TclError as e:
         pytest.skip(f"Tk unavailable: {e}")
     window.withdraw()
+    pump(window, lambda: window.station_selector.rows)
     yield window
     window.destroy()
 
@@ -33,6 +58,8 @@ def app(window):
     window.log_frame.reset()
     window.progress_frame.reset()
     window.action_frame.set_button_state("normal")
+    window.station_selector.search("")
+    window.station_selector.show_state("MG")
     for path in window.output_dir.iterdir():
         path.unlink()
     window.history_frame.populate_history()
@@ -91,10 +118,48 @@ def test_start_task_disables_button_and_starts_worker(app, monkeypatch):
 
     app.start_task()
 
+    job, queue = started["args"]
     assert started["running"]
-    assert started["args"][0] == "tk"
-    assert started["args"][-1] == app.output_dir
+    assert queue is app.comm_queue
+    assert (job.token, job.output_dir) == ("tk", app.output_dir)
+    assert [s.code for s in job.stations] == ["A565", "A521"]
     assert app.action_frame.start_button.cget("state") == "disabled"
+
+
+def test_requires_at_least_one_station(app, monkeypatch):
+    warnings = []
+    monkeypatch.setattr(app_module.messagebox, "showwarning", lambda title, msg: warnings.append(msg))
+    fill(app.input_frame.token_input.entry, "tk")
+    app.station_selector.set_visible(False)
+
+    app.start_task()
+
+    assert warnings == ["Selecione pelo menos uma estação."]
+
+
+def test_station_selector_defaults_to_operational_stations_of_mg(app):
+    selector = app.station_selector
+
+    assert selector.current_state == "MG"
+    assert [s.code for s in selector.selected_stations()] == ["A565", "A521"]
+    assert selector.count_label.cget("text") == "2 de 3 selecionadas"
+    assert "catálogo salvo" in selector.note_label.cget("text")
+
+
+def test_station_selector_search_and_bulk_selection(app):
+    selector = app.station_selector
+
+    selector.search("belo")
+    selector.set_visible(False)
+    selector.search("")
+
+    assert [s.code for s in selector.selected_stations()] == ["A565"]
+
+
+def test_station_selector_switches_state(app):
+    app.station_selector.show_state("BA")
+
+    assert [s.code for s in app.station_selector.selected_stations()] == ["A422"]
 
 
 def test_worker_messages_update_the_window(app):

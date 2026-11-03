@@ -7,8 +7,8 @@ from pydantic import TypeAdapter
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from geoclima.weather.domain.models import WeatherData
-from geoclima.weather.infrastructure.exceptions import StationDataError
+from geoclima.weather.domain.models import Station, WeatherData
+from geoclima.weather.infrastructure.exceptions import StationCatalogError, StationDataError
 
 BASE_URL = "https://apitempo.inmet.gov.br"
 
@@ -16,6 +16,7 @@ BASE_URL = "https://apitempo.inmet.gov.br"
 REQUEST_TIMEOUT = (10, 30)
 
 _weather_data_list_adapter = TypeAdapter(list[WeatherData])
+_station_list_adapter = TypeAdapter(list[Station])
 
 
 def _build_session() -> requests.Session:
@@ -66,3 +67,13 @@ def fetch_daily_data(
 
 def build_daily_url(initial_date: date, final_date: date, station_code: str, token: str) -> str:
     return f"{BASE_URL}/token/estacao/diaria/{initial_date.isoformat()}/{final_date.isoformat()}/{station_code}/{token}"
+
+
+def fetch_stations() -> list[Station]:
+    """Returns the catalog of automatic stations (public endpoint, no token)."""
+    try:
+        response = _session.get(f"{BASE_URL}/estacoes/T", timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return _station_list_adapter.validate_json(response.content)
+    except Exception as e:
+        raise StationCatalogError(f"Falha ao obter o catálogo de estações ({type(e).__name__})") from e
