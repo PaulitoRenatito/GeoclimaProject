@@ -3,15 +3,17 @@ from queue import Queue
 
 import pytest
 
+from geoclima.exporter.service import ExportFormat, ExportMode
 from geoclima.ui import worker
 from geoclima.ui.messages import MessageType
+from geoclima.weather.application.collection_service import CollectionCancelled
 from geoclima.weather.domain.models import Station
 from tests.conftest import make_record
 
 DAY1, DAY2 = date(2025, 8, 28), date(2025, 8, 29)
 
 
-def run(monkeypatch, tmp_path, result):
+def run(monkeypatch, tmp_path, result, **job_options):
     def fake_collect(**kwargs):
         if isinstance(result, Exception):
             raise result
@@ -20,7 +22,7 @@ def run(monkeypatch, tmp_path, result):
     monkeypatch.setattr(worker, "collect_weather_data", fake_collect)
     queue: Queue = Queue()
     stations = [Station(code="A565", name="BAMBUI", state="MG")]
-    worker.run_collection(worker.CollectionJob("tk", DAY1, DAY2, stations, tmp_path), queue)
+    worker.run_collection(worker.CollectionJob("tk", DAY1, DAY2, stations, tmp_path, **job_options), queue)
     return [queue.get_nowait() for _ in range(queue.qsize())]
 
 
@@ -28,11 +30,30 @@ def types(messages):
     return [m.type for m in messages]
 
 
-def test_exports_one_file_per_day(monkeypatch, tmp_path):
-    messages = run(monkeypatch, tmp_path, [make_record(DAY2), make_record(DAY1), make_record(DAY1, "A521")])
+def test_exports_one_file_per_day_and_shares_the_records(monkeypatch, tmp_path):
+    records = [make_record(DAY2), make_record(DAY1), make_record(DAY1, "A521")]
 
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["2025_08_28.csv", "2025_08_29.csv"]
-    assert types(messages)[-2:] == [MessageType.TASK_DONE, MessageType.TASK_FINISHED]
+    messages = run(monkeypatch, tmp_path, records)
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["MG_2025_08_28.csv", "MG_2025_08_29.csv"]
+    assert types(messages)[-3:] == [MessageType.RECORDS_COLLECTED, MessageType.TASK_DONE, MessageType.TASK_FINISHED]
+    assert messages[-3].payload == records
+    assert "2 arquivo(s)" in messages[-2].payload
+
+
+def test_uses_the_chosen_export_options(monkeypatch, tmp_path):
+    records = [make_record(DAY1), make_record(DAY2)]
+
+    run(monkeypatch, tmp_path, records, export_format=ExportFormat.EXCEL, export_mode=ExportMode.SINGLE_FILE)
+
+    assert [p.name for p in tmp_path.iterdir()] == ["MG_2025_08_28_a_2025_08_29.xlsx"]
+
+
+def test_cancelled_collection_exports_nothing(monkeypatch, tmp_path):
+    messages = run(monkeypatch, tmp_path, CollectionCancelled())
+
+    assert types(messages) == [MessageType.TASK_CANCELLED, MessageType.TASK_FINISHED]
+    assert not list(tmp_path.iterdir())
 
 
 def test_no_data_reports_error(monkeypatch, tmp_path):
@@ -80,4 +101,5 @@ def test_collects_only_the_selected_stations(monkeypatch, tmp_path):
     worker.run_collection(worker.CollectionJob("tk", DAY1, None, stations, tmp_path), Queue())
 
     assert received["station_codes"] == ["A565", "A521"]
+    assert received["cancel_event"] is not None
     assert received["listener"].station_names == {"A565": "BAMBUI", "A521": "BH"}

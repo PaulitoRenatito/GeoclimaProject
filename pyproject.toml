@@ -34,6 +34,7 @@ ruff = "^0.17.3"
 mypy = "^2.4.1"
 pandas-stubs = "^3.1.0.261029"
 types-requests = "^2.33.0.20261030"
+types-openpyxl = "^3.1.5.20261017"
 
 
 [build-system]
@@ -58,7 +59,7 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
-module = ["customtkinter.*"]
+module = ["customtkinter.*", "tkcalendar.*", "tkintermapview.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

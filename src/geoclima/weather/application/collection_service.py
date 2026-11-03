@@ -1,6 +1,7 @@
 """Use case: collect the daily data of many stations from INMET, respecting a rate limit."""
 
 import logging
+import threading
 import time
 from collections.abc import Callable, Iterable
 from datetime import date
@@ -16,6 +17,10 @@ logger = logging.getLogger(__name__)
 DEFAULT_REQUEST_INTERVAL = 0.8
 
 Fetcher = Callable[[date, date, str, str], list[WeatherData]]
+
+
+class CollectionCancelled(Exception):
+    """Raised when the user cancels a collection in progress."""
 
 
 class CollectionListener(Protocol):
@@ -36,11 +41,13 @@ def collect_weather_data(
     listener: CollectionListener | None = None,
     request_interval: float = DEFAULT_REQUEST_INTERVAL,
     fetch: Fetcher = inmet_client.fetch_daily_data,
+    cancel_event: threading.Event | None = None,
 ) -> list[WeatherData]:
     """
     Fetches every station sequentially and returns all records found.
 
     A failing station is logged and skipped, so one bad station never aborts the whole run.
+    Setting cancel_event stops before the next station and raises CollectionCancelled.
     """
     requests = [
         WeatherDataRequest(
@@ -56,6 +63,8 @@ def collect_weather_data(
 
     records: list[WeatherData] = []
     for request in requests:
+        if cancel_event is not None and cancel_event.is_set():
+            raise CollectionCancelled
         started_at = time.monotonic()
         result = _fetch_station(request, token, fetch)
 
@@ -66,7 +75,11 @@ def collect_weather_data(
 
         remaining_wait = request_interval - (time.monotonic() - started_at)
         if remaining_wait > 0:
-            time.sleep(remaining_wait)
+            # Event.wait returns early when cancelled, so the user never waits for the rate limit.
+            if cancel_event is not None:
+                cancel_event.wait(remaining_wait)
+            else:
+                time.sleep(remaining_wait)
 
     return records
 

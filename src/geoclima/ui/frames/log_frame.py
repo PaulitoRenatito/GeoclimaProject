@@ -7,11 +7,12 @@ class LogFrame(customtkinter.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.log_text = customtkinter.CTkTextbox(self, state="disabled", wrap="word", font=("", 18))
+        self.log_text = customtkinter.CTkTextbox(self, state="disabled", wrap="word", font=("", 14))
         self.log_text.grid(row=0, column=0, sticky="nsew")
 
         self.log_text.tag_config("success", foreground="#55FF5D")
         self.log_text.tag_config("error", foreground="#FF2E2E")
+        self.log_text.tag_config("warning", foreground="#E0B050")
 
     def _log(self, message, tags=None):
         self.log_text.configure(state="normal")
@@ -27,6 +28,9 @@ class LogFrame(customtkinter.CTkFrame):
 
     def show_error(self, message):
         self._log(f"ERRO: {message}", "error")
+
+    def show_warning(self, message):
+        self._log(f"AVISO: {message}", "warning")
 
     def reset(self):
         self.log_text.configure(state="normal")

@@ -11,6 +11,8 @@ class MessageType(Enum):
     PROGRESS_STEP = auto()  # payload: number of steps done
     TASK_DONE = auto()  # payload: success message
     TASK_ERROR = auto()  # payload: error message
+    TASK_CANCELLED = auto()  # payload: message
+    RECORDS_COLLECTED = auto()  # payload: list[WeatherData], for the visualization tabs
     TASK_FINISHED = auto()  # always sent last, success or not
     STATIONS_LOADED = auto()  # payload: CatalogResult
 

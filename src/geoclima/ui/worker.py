@@ -1,16 +1,16 @@
 """Collection + export flow, run in a background thread. Talks to the GUI only through a queue."""
 
 import logging
-from collections import defaultdict
+import threading
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from queue import Queue
 
-from geoclima.exporter.csv_exporter import CsvExporter
+from geoclima.exporter.service import ExportFormat, ExportMode, export_records
 from geoclima.settings import OUTPUT_DIR
 from geoclima.ui.messages import MessageType, WorkerMessage
-from geoclima.weather.application.collection_service import collect_weather_data
+from geoclima.weather.application.collection_service import CollectionCancelled, collect_weather_data
 from geoclima.weather.domain.models import Station, WeatherData
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,10 @@ class CollectionJob:
     initial_date: date
     final_date: date | None
     stations: list[Station]
-    output_dir: Path = field(default=OUTPUT_DIR)
+    output_dir: Path = OUTPUT_DIR
+    export_format: ExportFormat = ExportFormat.CSV
+    export_mode: ExportMode = ExportMode.PER_DAY
+    cancel_event: threading.Event = field(default_factory=threading.Event)
 
 
 class QueueListener:
@@ -57,39 +60,29 @@ def run_collection(job: CollectionJob, queue: Queue[WorkerMessage]) -> None:
             final_date=job.final_date,
             station_codes=[station.code for station in job.stations],
             listener=QueueListener(queue, {station.code: station.name for station in job.stations}),
+            cancel_event=job.cancel_event,
         )
 
-        records_by_day: dict[date, list[WeatherData]] = defaultdict(list)
-        for record in records:
-            records_by_day[record.measurement_date].append(record)
-
-        if not records_by_day:
+        if not records:
             queue.put(
-                WorkerMessage(
-                    MessageType.TASK_ERROR,
-                    "Nenhum dado foi retornado pela API. Verifique a data e o token.",
-                )
+                WorkerMessage(MessageType.TASK_ERROR, "Nenhum dado foi retornado pela API. Verifique a data e o token.")
             )
             return
 
-        queue.put(
-            WorkerMessage(
-                MessageType.LOG,
-                f"Coleta finalizada. Exportando {len(records_by_day)} arquivo(s) CSV...",
-            )
-        )
-
-        for day, day_records in sorted(records_by_day.items()):
-            path = CsvExporter(day=day, data=day_records, output_dir=job.output_dir).export()
+        queue.put(WorkerMessage(MessageType.LOG, f"Coleta finalizada. Exportando ({job.export_format.value})..."))
+        paths = export_records(records, job.export_format, job.export_mode, job.output_dir)
+        for path in paths:
             queue.put(WorkerMessage(MessageType.LOG, f"Arquivo '{path.name}' exportado."))
 
+        queue.put(WorkerMessage(MessageType.RECORDS_COLLECTED, records))
         queue.put(
             WorkerMessage(
-                MessageType.TASK_DONE,
-                f"Exportação concluída. Arquivos salvos em '{job.output_dir}'.",
+                MessageType.TASK_DONE, f"Exportação concluída: {len(paths)} arquivo(s) em '{job.output_dir}'."
             )
         )
 
+    except CollectionCancelled:
+        queue.put(WorkerMessage(MessageType.TASK_CANCELLED, "Coleta cancelada. Nenhum arquivo foi gerado."))
     except Exception as e:
         logger.exception("Collection failed")
         queue.put(WorkerMessage(MessageType.TASK_ERROR, f"Ocorreu um erro crítico: {e}"))

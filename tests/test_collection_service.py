@@ -1,9 +1,10 @@
+import threading
 from datetime import date
 
 import pytest
 
 from geoclima.weather.application import collection_service
-from geoclima.weather.application.collection_service import collect_weather_data
+from geoclima.weather.application.collection_service import CollectionCancelled, collect_weather_data
 from geoclima.weather.infrastructure.exceptions import StationDataError
 from tests.conftest import make_record
 
@@ -85,3 +86,37 @@ def test_uses_mg_stations_by_default():
 
     assert codes == list(collection_service.MG_STATIONS.values())
     assert len(codes) == len(set(codes)), "station codes must be unique"
+
+
+def test_cancel_stops_before_the_next_station():
+    cancel = threading.Event()
+    fetched = []
+
+    def fetch_then_cancel(initial_date, final_date, station_code, token):
+        fetched.append(station_code)
+        cancel.set()
+        return []
+
+    with pytest.raises(CollectionCancelled):
+        collect(station_codes=["A1", "A2", "A3"], fetch=fetch_then_cancel, cancel_event=cancel)
+
+    assert fetched == ["A1"]
+
+
+def test_cancel_interrupts_the_wait_between_requests(monkeypatch):
+    monkeypatch.setattr(collection_service.time, "sleep", lambda s: pytest.fail("must wait on the event"))
+    cancel = threading.Event()
+    waits = []
+
+    class RecordingEvent:
+        def is_set(self):
+            return cancel.is_set()
+
+        def wait(self, timeout):
+            waits.append(timeout)
+            cancel.set()
+
+    with pytest.raises(CollectionCancelled):
+        collect(station_codes=["A1", "A2"], request_interval=60, cancel_event=RecordingEvent())
+
+    assert len(waits) == 1

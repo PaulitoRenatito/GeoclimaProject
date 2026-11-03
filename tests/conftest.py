@@ -2,6 +2,7 @@ from datetime import date
 from typing import Any
 
 import pytest
+from keyring.errors import KeyringError, PasswordDeleteError
 
 from geoclima.weather.domain.models import WeatherData
 
@@ -36,3 +37,26 @@ def make_record(day: date, station_code: str = "A565", station_name: str = "BAMB
 @pytest.fixture
 def raw_record() -> dict[str, Any]:
     return make_raw_record()
+
+
+class FakeKeyring:
+    """In-memory stand-in for the keyring module, so tests never touch the real vault."""
+
+    def __init__(self, fail=False):
+        self.passwords = {}
+        self.fail = fail
+
+    def get_password(self, service, key):
+        if self.fail:
+            raise KeyringError("vault locked")
+        return self.passwords.get((service, key))
+
+    def set_password(self, service, key, value):
+        if self.fail:
+            raise KeyringError("vault locked")
+        self.passwords[(service, key)] = value
+
+    def delete_password(self, service, key):
+        if (service, key) not in self.passwords:
+            raise PasswordDeleteError("not found")
+        del self.passwords[(service, key)]

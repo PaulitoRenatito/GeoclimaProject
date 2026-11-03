@@ -3,14 +3,20 @@
 import time
 import tkinter
 from datetime import date, timedelta
+from typing import ClassVar
 
 import pytest
 
+from geoclima.credentials import TokenStore
+from geoclima.exporter.service import ExportFormat, ExportMode
+from geoclima.preferences import Preferences
 from geoclima.ui import app as app_module
+from geoclima.ui.frames.action_frame import CANCEL_TEXT, START_TEXT
 from geoclima.ui.messages import MessageType, WorkerMessage
 from geoclima.ui.widgets.exceptions import InputValidationError
 from geoclima.weather.domain.models import Station
 from geoclima.weather.infrastructure.station_catalog import CatalogResult, CatalogSource
+from tests.conftest import FakeKeyring
 
 STATIONS = [
     Station(code="A565", name="BAMBUI", state="MG", status="Operante"),
@@ -34,12 +40,32 @@ def pump(window, until, timeout=5.0):
         window.process_queue()
 
 
+class FakeThread:
+    """Captures the worker instead of running it."""
+
+    started: ClassVar[dict] = {}
+
+    def __init__(self, target, args, daemon):
+        FakeThread.started = {"target": target, "args": args}
+
+    def start(self):
+        FakeThread.started["running"] = True
+
+
+KEYRING = FakeKeyring()
+
+
 @pytest.fixture(scope="module")
 def window(tmp_path_factory):
     # One window per module: creating a Tk root per test fails intermittently on Windows
     # ("Can't find a usable init.tcl").
     try:
-        window = app_module.WeatherApp(output_dir=tmp_path_factory.mktemp("output"), catalog=FakeCatalog())
+        window = app_module.WeatherApp(
+            output_dir=tmp_path_factory.mktemp("output"),
+            catalog=FakeCatalog(),
+            token_store=TokenStore(KEYRING),
+            preferences_path=tmp_path_factory.mktemp("appdata") / "preferences.json",
+        )
     except tkinter.TclError as e:
         pytest.skip(f"Tk unavailable: {e}")
     window.withdraw()
@@ -57,7 +83,10 @@ def app(window):
     fill(form.final_date_input.entry, "")
     window.log_frame.reset()
     window.progress_frame.reset()
-    window.action_frame.set_button_state("normal")
+    window.action_frame.set_running(False)
+    window.current_job = None
+    window.input_frame.remember_token.deselect()
+    window.export_options.set_values(ExportFormat.CSV, ExportMode.PER_DAY)
     window.station_selector.search("")
     window.station_selector.show_state("MG")
     for path in window.output_dir.iterdir():
@@ -70,6 +99,27 @@ def fill(entry, value):
     entry.delete(0, "end")
     if value:
         entry.insert(0, value)
+
+
+def test_preferences_and_saved_token_are_restored_on_startup(window, tmp_path):
+    # A second window is safe here: the shared one already initialized Tcl in this process.
+    Preferences(export_format="EXCEL", export_mode="SINGLE_FILE", remember_token=True).save(tmp_path / "p.json")
+    keyring = FakeKeyring()
+    keyring.set_password("Geoclima", "inmet-token", "saved-token")
+
+    other = app_module.WeatherApp(
+        output_dir=tmp_path,
+        catalog=FakeCatalog(),
+        token_store=TokenStore(keyring),
+        preferences_path=tmp_path / "p.json",
+    )
+    try:
+        assert other.input_frame.token_input.get() == "saved-token"
+        assert other.input_frame.remember_token.get() == 1
+        assert other.export_options.export_format is ExportFormat.EXCEL
+        assert other.export_options.mode is ExportMode.SINGLE_FILE
+    finally:
+        other.destroy()
 
 
 def test_initial_date_defaults_to_yesterday(app):
@@ -103,27 +153,66 @@ def test_invalid_input_shows_warning_and_starts_nothing(app, monkeypatch):
     assert warnings == ["O campo de Token não pode estar vazio."]
 
 
-def test_start_task_disables_button_and_starts_worker(app, monkeypatch):
-    started = {}
-
-    class FakeThread:
-        def __init__(self, target, args, daemon):
-            started.update(target=target, args=args)
-
-        def start(self):
-            started["running"] = True
-
+def start(app, monkeypatch, token="tk"):
     monkeypatch.setattr(app_module.threading, "Thread", FakeThread)
-    fill(app.input_frame.token_input.entry, "tk")
-
+    fill(app.input_frame.token_input.entry, token)
     app.start_task()
+    return FakeThread.started
+
+
+def test_start_task_builds_the_job_and_turns_the_button_into_cancel(app, monkeypatch):
+    app.export_options.set_values(ExportFormat.EXCEL, ExportMode.SINGLE_FILE)
+
+    started = start(app, monkeypatch)
 
     job, queue = started["args"]
     assert started["running"]
     assert queue is app.comm_queue
     assert (job.token, job.output_dir) == ("tk", app.output_dir)
     assert [s.code for s in job.stations] == ["A565", "A521"]
+    assert (job.export_format, job.export_mode) == (ExportFormat.EXCEL, ExportMode.SINGLE_FILE)
+    assert app.action_frame.start_button.cget("text") == CANCEL_TEXT
+
+
+def test_cancel_sets_the_job_event(app, monkeypatch):
+    job, _ = start(app, monkeypatch)["args"]
+
+    app.action_frame.on_click()  # the same button now cancels
+
+    assert job.cancel_event.is_set()
     assert app.action_frame.start_button.cget("state") == "disabled"
+
+
+def test_remember_token_saves_it_in_the_vault_and_preferences(app, monkeypatch):
+    app.input_frame.remember_token.select()
+
+    start(app, monkeypatch, token="new-token")
+
+    assert KEYRING.get_password("Geoclima", "inmet-token") == "new-token"
+    assert Preferences.load(app.preferences_path).remember_token
+
+
+def test_unchecking_remember_token_removes_it_from_the_vault(app, monkeypatch):
+    KEYRING.set_password("Geoclima", "inmet-token", "old")
+    app.preferences.remember_token = True
+
+    start(app, monkeypatch)
+
+    assert KEYRING.get_password("Geoclima", "inmet-token") is None
+    assert not Preferences.load(app.preferences_path).remember_token
+
+
+def test_calendar_popup_fills_the_date(app):
+    popup = app.input_frame.final_date_input.open_calendar()
+    try:
+        popup.select(date(2025, 8, 30))
+    finally:
+        if popup.winfo_exists():
+            popup.destroy()
+
+    assert app.input_frame.final_date_input.get() == "2025-08-30"
+    app.input_frame.final_date_input.clear_button.invoke()
+    assert app.input_frame.final_date_input.get() == ""
 
 
 def test_requires_at_least_one_station(app, monkeypatch):
@@ -163,13 +252,14 @@ def test_station_selector_switches_state(app):
 
 
 def test_worker_messages_update_the_window(app):
-    app.action_frame.set_button_state("disabled")
+    app.action_frame.set_running(True)
     (app.output_dir / "2025_08_28.csv").write_text("x")
 
     for message in [
         WorkerMessage(MessageType.PROGRESS_START, 4),
         WorkerMessage(MessageType.PROGRESS_STEP, 1),
         WorkerMessage(MessageType.LOG, "Dados recebidos para: BAMBUI"),
+        WorkerMessage(MessageType.TASK_CANCELLED, "cancelada"),
         WorkerMessage(MessageType.TASK_DONE, "pronto"),
         WorkerMessage(MessageType.TASK_FINISHED),
     ]:
@@ -177,10 +267,12 @@ def test_worker_messages_update_the_window(app):
     app.process_queue()
 
     assert app.progress_frame.progress_bar.get() == pytest.approx(0.25)
+    assert app.progress_frame.status_label.cget("text").startswith("1/4 estações · ~")
     log = app.log_frame.log_text.get("1.0", "end")
+    assert "AVISO: cancelada" in log
     assert "INFO: Dados recebidos para: BAMBUI" in log
     assert "SUCESSO: pronto" in log
-    assert app.action_frame.start_button.cget("state") == "normal"
+    assert app.action_frame.start_button.cget("text") == START_TEXT
     history = [w.cget("text") for w in app.history_frame.scrollable_frame.winfo_children()]
     assert history == ["2025_08_28.csv"]
 

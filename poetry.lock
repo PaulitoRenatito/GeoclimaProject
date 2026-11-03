@@ -2609,6 +2609,18 @@ pywin32 = {version = "*", markers = "platform_system == \"Windows\""}
 requests = "*"
 
 [[package]]
+name = "types-openpyxl"
+version = "3.1.5.20261017"
+description = "Typing stubs for openpyxl"
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "types_openpyxl-3.1.5.20261017-py3-none-any.whl", hash = "sha256:3315cfebad290cc7ade1fccaf3a46ee820b3a8e7df726ff4f18d30ab7f383d68"},
+    {file = "types_openpyxl-3.1.5.20261017.tar.gz", hash = "sha256:3deb3b6279b65ab379c126df0ee1fd27500c9628edb8d9667d73f637462917dc"},
+]
+
+[[package]]
 name = "types-requests"
 version = "2.33.0.20261030"
 description = "Typing stubs for requests"
@@ -2704,4 +2716,4 @@ type = ["pytest-mypy (>=1.0.1) ; platform_python_implementation != \"PyPy\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.15"
-content-hash = "43f6f95ceded41cafcd75cc3d3ff8f41da151e1babb70350cfddaf8ea1b7b18b"
+content-hash = "757a980f81e3fdd5625955e37c2ce55e7bf3efd57482cb7a037fc76ac48eac4c"

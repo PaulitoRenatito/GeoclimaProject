@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -9,6 +8,9 @@ from geoclima.weather.domain.models import WeatherData
 
 # Domain field -> column header shown to the user, in output order.
 COLUMN_LABELS: dict[str, str] = {
+    "measurement_date": "Data",
+    "state": "UF",
+    "station_code": "Código",
     "station_name": "Nome da Estação",
     "temp_min": "Temp. Mínima (°C)",
     "temp_max": "Temp. Máxima (°C)",
@@ -21,15 +23,16 @@ COLUMN_LABELS: dict[str, str] = {
 
 
 class Exporter(ABC):
-    """
-    Writes the records of one day to a file. Subclasses only choose the format.
-    """
+    """Writes records to one file. Subclasses only choose the format."""
 
     extension: str
 
-    def __init__(self, day: date, data: list[WeatherData], output_dir: Path = OUTPUT_DIR) -> None:
-        self.day = day
-        self.data = data
+    def __init__(
+        self, records: list[WeatherData], file_stem: str, sheet_name: str, output_dir: Path = OUTPUT_DIR
+    ) -> None:
+        self.records = records
+        self.file_stem = file_stem
+        self.sheet_name = sheet_name
         self.output_dir = output_dir
 
     def export(self) -> Path:
@@ -40,10 +43,11 @@ class Exporter(ABC):
         return path
 
     def get_file_path(self) -> Path:
-        return self.output_dir / f"{self.day.strftime('%Y_%m_%d')}.{self.extension}"
+        return self.output_dir / f"{self.file_stem}.{self.extension}"
 
     def to_dataframe(self) -> pd.DataFrame:
-        rows = [record.model_dump(include=set(COLUMN_LABELS)) for record in self.data]
+        ordered = sorted(self.records, key=lambda r: (r.measurement_date, r.station_name))
+        rows = [record.model_dump(include=set(COLUMN_LABELS)) for record in ordered]
         return pd.DataFrame(rows, columns=list(COLUMN_LABELS)).rename(columns=COLUMN_LABELS)
 
     @abstractmethod
