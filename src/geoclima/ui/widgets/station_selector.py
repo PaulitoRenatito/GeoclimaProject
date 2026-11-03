@@ -2,7 +2,7 @@ from PySide6.QtCore import QSortFilterProxyModel, Qt, Signal
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QListView, QPushButton, QVBoxLayout, QWidget
 
-from geoclima.qt.theme import named
+from geoclima.ui.theme import named
 from geoclima.weather.domain.models import Station
 from geoclima.weather.infrastructure.station_catalog import CatalogResult, CatalogSource, states_of
 

@@ -5,7 +5,7 @@ import pytest
 from geoclima.credentials import SERVICE_NAME, TOKEN_KEY, TokenStore
 from geoclima.exporter.service import ExportFormat, ExportMode
 from geoclima.preferences import Preferences
-from geoclima.ui.frames.progress_frame import format_eta
+from geoclima.ui.progress import format_eta
 from tests.conftest import FakeKeyring
 
 

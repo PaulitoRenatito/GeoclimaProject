@@ -16,9 +16,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from geoclima.qt.theme import named
-from geoclima.qt.widgets import page_header, panel
 from geoclima.settings import OUTPUT_DIR
+from geoclima.ui.theme import named
+from geoclima.ui.widgets.common import page_header, panel
 
 EXPORT_EXTENSIONS = {".csv": "CSV", ".xlsx": "Excel"}
 COLUMNS = ["Arquivo", "Tipo", "Tamanho", "Modificado em"]

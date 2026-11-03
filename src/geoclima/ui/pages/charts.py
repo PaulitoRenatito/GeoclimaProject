@@ -22,10 +22,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from geoclima.qt import theme
-from geoclima.qt.theme import checkable, named
 from geoclima.settings import OUTPUT_DIR
+from geoclima.ui import theme
 from geoclima.ui.colors import value_colors
+from geoclima.ui.theme import checkable, named
 from geoclima.weather.application.analysis import (
     METRICS,
     METRICS_BY_LABEL,
@@ -170,6 +170,7 @@ class ChartsPage(QWidget):
         self.ranking.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.ranking.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.ranking.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.ranking.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.ranking.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.ranking.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.ranking.doubleClicked.connect(lambda index: self.show_station(self.ranking_model.item(index.row()).text()))
@@ -277,7 +278,7 @@ class ChartsPage(QWidget):
         self.plot.getAxis("left").setTicks([[(i, item.name) for i, item in enumerate(shown)]])
         self.plot.getAxis("bottom").setTicks(None)
         self.plot.setMouseEnabled(x=False, y=False)
-        self.plot.setXRange(min(0.0, *values), max(values) * 1.12, padding=0)
+        self.plot.setXRange(min(0.0, *values), max(values) * 1.18, padding=0)  # room for the value labels
         self.plot.setYRange(-0.6, len(shown) - 0.4, padding=0)
 
         title = f"{metric.label} por estação ({metric.unit}, {metric.period_note})"

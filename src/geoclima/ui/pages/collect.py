@@ -17,13 +17,12 @@ from PySide6.QtWidgets import (
 )
 
 from geoclima.exporter.service import ExportFormat, ExportMode
-from geoclima.qt import theme
-from geoclima.qt.progress import ProgressTracker
-from geoclima.qt.station_selector import StationSelector
-from geoclima.qt.theme import named, restyle
-from geoclima.qt.widgets import SegmentedControl, page_header, panel
-from geoclima.ui.validation import validate_date_range, validate_token
-from geoclima.ui.widgets.exceptions import InputValidationError
+from geoclima.ui import theme
+from geoclima.ui.progress import ProgressTracker
+from geoclima.ui.theme import named, restyle
+from geoclima.ui.validation import validate_date_range, validate_past_date, validate_token
+from geoclima.ui.widgets.common import SegmentedControl, page_header, panel
+from geoclima.ui.widgets.station_selector import StationSelector
 
 START_TEXT = "Iniciar coleta"
 CANCEL_TEXT = "Cancelar coleta"
@@ -170,8 +169,8 @@ class CollectPage(QWidget):
         initial: date = self.initial_date.date().toPython()  # type: ignore[assignment]
         final: date | None = self.final_date.date().toPython() if self.period_check.isChecked() else None  # type: ignore[assignment]
         for day in (initial, final):
-            if day is not None and day >= (today or date.today()):
-                raise InputValidationError("A data deve ser anterior à data atual.")
+            if day is not None:
+                validate_past_date(day, today)
         validate_date_range(initial, final)
         return token, initial, final
 

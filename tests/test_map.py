@@ -5,8 +5,8 @@ from PySide6.QtCore import QBuffer, QByteArray, QEvent, QPoint, QPointF, Qt
 from PySide6.QtGui import QColor, QImage, QMouseEvent
 from PySide6.QtWidgets import QPushButton
 
-from geoclima.qt.map_page import MapPage
-from geoclima.qt.tile_map import (
+from geoclima.ui.pages.map import MapPage
+from geoclima.ui.widgets.tile_map import (
     BRAZIL_CENTER,
     MAX_FIT_ZOOM,
     Marker,

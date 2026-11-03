@@ -1,4 +1,4 @@
-"""Messages sent from the worker thread to the Tk main loop through a queue."""
+"""Messages the worker thread sends to the window (through MessageBridge, a queue-like QObject)."""
 
 from dataclasses import dataclass
 from enum import Enum, auto

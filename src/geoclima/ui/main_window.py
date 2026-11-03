@@ -21,15 +21,15 @@ from geoclima import __version__
 from geoclima.credentials import TokenStore
 from geoclima.exporter.reader import ExportReadError, read_export
 from geoclima.preferences import PREFERENCES_PATH, Preferences
-from geoclima.qt.charts_page import ChartsPage
-from geoclima.qt.collect_page import CollectPage
-from geoclima.qt.history_page import HistoryPage
-from geoclima.qt.map_page import MapPage
-from geoclima.qt.theme import checkable, named
-from geoclima.qt.tile_map import Fetch
 from geoclima.settings import OUTPUT_DIR
 from geoclima.ui.messages import MessageType, WorkerMessage
-from geoclima.ui.widgets.exceptions import InputValidationError
+from geoclima.ui.pages.charts import ChartsPage
+from geoclima.ui.pages.collect import CollectPage
+from geoclima.ui.pages.history import HistoryPage
+from geoclima.ui.pages.map import MapPage
+from geoclima.ui.theme import checkable, named
+from geoclima.ui.validation import InputValidationError
+from geoclima.ui.widgets.tile_map import Fetch
 from geoclima.ui.worker import CollectionJob, run_collection
 from geoclima.weather.domain.models import WeatherData
 from geoclima.weather.infrastructure.station_catalog import CatalogResult, StationCatalog

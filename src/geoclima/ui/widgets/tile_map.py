@@ -27,8 +27,8 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QPushButton, QToolTip, QVBoxLayout, QWidget
 
-from geoclima.qt import theme
-from geoclima.qt.theme import named
+from geoclima.ui import theme
+from geoclima.ui.theme import named
 
 logger = logging.getLogger(__name__)
 

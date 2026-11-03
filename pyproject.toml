@@ -1,6 +1,6 @@
 [project]
 name = "GeoclimaProject"
-version = "0.2.0"
+version = "0.3.0"
 description = "Desktop app that collects daily INMET weather station data and exports it to CSV/Excel."
 authors = [
     {name = "PaulitoRenatito",email = "paulorenatosouza02@gmail.com"}
@@ -11,12 +11,8 @@ dependencies = [
     "pandas (>=2.3.1,<3.0.0)",
     "requests (>=2.32.4,<3.0.0)",
     "pydantic (>=2.11.7,<3.0.0)",
-    "customtkinter (>=5.2.2,<6.0.0)",
     "openpyxl (>=3.1.5,<4.0.0)",
-    "tkcalendar (>=1.6.1,<2.0.0)",
     "keyring (>=25.7.0,<26.0.0)",
-    "matplotlib (>=3.11.2,<4.0.0)",
-    "tkintermapview (>=1.30,<2.0)",
     "pyside6-essentials (>=6.12.0,<7.0.0)",
     "pyqtgraph (>=0.14.0,<0.15.0)"
 ]
@@ -64,11 +60,11 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
-module = ["customtkinter.*", "tkcalendar.*", "tkintermapview.*", "pyqtgraph.*", "PySide6.*"]
+module = ["pyqtgraph.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=geoclima --cov-report=term-missing"
-# A modal Tk dialog waiting for input would otherwise hang CI for hours; fail with a traceback instead.
+# A modal dialog waiting for input would otherwise hang CI for hours; fail with a traceback instead.
 timeout = 60

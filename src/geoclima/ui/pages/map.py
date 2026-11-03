@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from geoclima.qt.theme import named
-from geoclima.qt.tile_map import Fetch, Legend, Marker, TileMap
-from geoclima.qt.widgets import page_header, panel
 from geoclima.ui.colors import value_colors
+from geoclima.ui.theme import named
+from geoclima.ui.widgets.common import page_header, panel
+from geoclima.ui.widgets.tile_map import Fetch, Legend, Marker, TileMap
 from geoclima.weather.application.analysis import (
     METRICS,
     METRICS_BY_LABEL,

@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from geoclima.qt.theme import checkable, named
+from geoclima.ui.theme import checkable, named
 
 
 def panel(title: str | None = None) -> tuple[QFrame, QVBoxLayout]:
