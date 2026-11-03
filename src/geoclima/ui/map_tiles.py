@@ -42,19 +42,24 @@ class TileFetcher:
         self.session = session or requests.Session()
         self.session.headers["User-Agent"] = USER_AGENT
 
-    def get(self, url: str, **_ignored: object) -> TileResponse:
+    def fetch(self, url: str) -> bytes:
+        """The tile image, from the local cache when fresh. Raises on HTTP errors."""
         path = self.cache_dir / f"{hashlib.sha1(url.encode()).hexdigest()}.png"
         if path.exists() and time.time() - path.stat().st_mtime < CACHE_TTL_SECONDS:
-            return TileResponse(io.BytesIO(path.read_bytes()))
+            return path.read_bytes()
 
         response = self.session.get(url, timeout=TIMEOUT)
-        response.raise_for_status()  # tkintermapview catches errors and shows an empty tile
+        response.raise_for_status()
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(response.content)
         except OSError:
             logger.warning("Could not cache map tile", exc_info=True)
-        return TileResponse(io.BytesIO(response.content))
+        return response.content
+
+    def get(self, url: str, **_ignored: object) -> TileResponse:
+        # tkintermapview catches the errors raised here and shows an empty tile.
+        return TileResponse(io.BytesIO(self.fetch(url)))
 
 
 def install(fetcher: TileFetcher | None = None) -> None:

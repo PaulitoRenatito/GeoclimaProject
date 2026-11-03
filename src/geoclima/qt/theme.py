@@ -62,6 +62,11 @@ QPushButton#primary:hover {{ background: {ACCENT_HOVER}; }}
 QPushButton#primary:disabled {{ background: {SURFACE_ALT}; border-color: {BORDER}; color: {DISABLED}; }}
 QPushButton#danger {{ background: {DANGER}; border: 1px solid {DANGER}; color: white; font-weight: 600; }}
 QPushButton#danger:hover {{ background: {DANGER_HOVER}; }}
+#mapButton {{
+    background: {SURFACE}; border: 1px solid {BORDER}; border-radius: 6px; padding: 0;
+    font-size: 13pt; font-weight: 600;
+}}
+#mapButton:hover {{ border-color: {ACCENT}; }}
 #segment QPushButton {{ background: {INPUT}; border-radius: 0; padding: 6px 16px; }}
 #segment QPushButton:checked {{ background: {ACCENT}; border-color: {ACCENT}; color: white; }}
 

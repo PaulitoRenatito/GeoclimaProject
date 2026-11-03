@@ -65,6 +65,7 @@ def make_window(qtbot, tmp_path, keyring):
             token_store=TokenStore(keyring),
             preferences_path=prefs_path,
             start_thread=ThreadStarter(),
+            map_fetch=lambda url: b"",  # never touch the network
         )
         qtbot.addWidget(window)
         return window
@@ -313,6 +314,16 @@ def test_collected_records_feed_the_charts(window):
 
     assert window.charts_page.records == records
     assert window.charts_page.subtitle.text().startswith("Última coleta · 2 estação(ões)")
+    assert [m.label for m in window.map_page.map.markers] == ["31", "31"]  # make_record: temp_max 31.2
+
+
+def test_map_uses_catalog_coordinates_for_stations_without_position(window):
+    record = make_record(date(2025, 8, 28)).model_copy(update={"latitude": None, "longitude": None})
+
+    window.show_records([record])
+
+    (marker,) = window.map_page.map.markers
+    assert (marker.lat, marker.lon) == (-20.03, -46.0)  # BAMBUI in the fake catalog
 
 
 def test_visualize_file_opens_the_charts(window, tmp_path):

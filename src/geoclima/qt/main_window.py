@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Protocol
 
 from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -23,7 +24,9 @@ from geoclima.preferences import PREFERENCES_PATH, Preferences
 from geoclima.qt.charts_page import ChartsPage
 from geoclima.qt.collect_page import CollectPage
 from geoclima.qt.history_page import HistoryPage
+from geoclima.qt.map_page import MapPage
 from geoclima.qt.theme import checkable, named
+from geoclima.qt.tile_map import Fetch
 from geoclima.settings import OUTPUT_DIR
 from geoclima.ui.messages import MessageType, WorkerMessage
 from geoclima.ui.widgets.exceptions import InputValidationError
@@ -31,7 +34,7 @@ from geoclima.ui.worker import CollectionJob, run_collection
 from geoclima.weather.domain.models import WeatherData
 from geoclima.weather.infrastructure.station_catalog import CatalogResult, StationCatalog
 
-COLLECT, HISTORY, CHARTS = "Coleta de Dados", "Histórico", "Gráficos"
+COLLECT, HISTORY, CHARTS, MAP = "Coleta de Dados", "Histórico", "Gráficos", "Mapa"
 
 
 class Catalog(Protocol):
@@ -55,6 +58,7 @@ class MainWindow(QMainWindow):
         token_store: TokenStore | None = None,
         preferences_path: Path = PREFERENCES_PATH,
         start_thread=lambda target, args: threading.Thread(target=target, args=args, daemon=True).start(),
+        map_fetch: Fetch | None = None,
     ) -> None:
         super().__init__()
         self.output_dir = output_dir
@@ -79,12 +83,19 @@ class MainWindow(QMainWindow):
         self.history_page.visualize_requested.connect(self.visualize_file)
         self.charts_page = ChartsPage(output_dir=output_dir)
         self.charts_page.file_requested.connect(self.visualize_file)
+        self.map_page = MapPage(map_fetch)
 
         self.pages = QStackedWidget()
         self.nav = QButtonGroup(self)
         self.nav_buttons: dict[str, QPushButton] = {}
         sidebar = self._build_sidebar()
-        for name, page in ((COLLECT, self.collect_page), (HISTORY, self.history_page), (CHARTS, self.charts_page)):
+        pages = (
+            (COLLECT, self.collect_page),
+            (HISTORY, self.history_page),
+            (CHARTS, self.charts_page),
+            (MAP, self.map_page),
+        )
+        for name, page in pages:
             self.add_page(name, page)
 
         central = QWidget()
@@ -227,7 +238,18 @@ class MainWindow(QMainWindow):
     # Visualization ---------------------------------------------------------
 
     def show_records(self, records: list[WeatherData], source: str = "Última coleta") -> None:
+        """Feeds the charts and the map. Catalog coordinates fill in stations without a position."""
+        coordinates = {
+            s.code: (s.latitude, s.longitude)
+            for s in self.collect_page.station_selector.stations
+            if s.latitude is not None and s.longitude is not None
+        }
         self.charts_page.set_records(records, source)
+        self.map_page.set_records(records, coordinates)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self.map_page.map.shutdown()
+        super().closeEvent(event)
 
     def visualize_file(self, path: Path) -> None:
         try:
