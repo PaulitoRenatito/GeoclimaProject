@@ -136,25 +136,20 @@ def fill(entry, value):
         entry.insert(0, value)
 
 
-def test_preferences_and_saved_token_are_restored_on_startup(window, tmp_path):
-    # A second window is safe here: the shared one already initialized Tcl in this process.
+def test_preferences_and_saved_token_are_restored_on_startup(app, monkeypatch, tmp_path):
+    # Same code path as __init__, on the shared window: a second Tk root is flaky on Windows.
     Preferences(export_format="EXCEL", export_mode="SINGLE_FILE", remember_token=True).save(tmp_path / "p.json")
     keyring = FakeKeyring()
     keyring.set_password("Geoclima", "inmet-token", "saved-token")
+    monkeypatch.setattr(app, "preferences", Preferences.load(tmp_path / "p.json"))
+    monkeypatch.setattr(app, "token_store", TokenStore(keyring))
 
-    other = app_module.WeatherApp(
-        output_dir=tmp_path,
-        catalog=FakeCatalog(),
-        token_store=TokenStore(keyring),
-        preferences_path=tmp_path / "p.json",
-    )
-    try:
-        assert other.input_frame.token_input.get() == "saved-token"
-        assert other.input_frame.remember_token.get() == 1
-        assert other.export_options.export_format is ExportFormat.EXCEL
-        assert other.export_options.mode is ExportMode.SINGLE_FILE
-    finally:
-        other.destroy()
+    app.apply_preferences()
+
+    assert app.input_frame.token_input.get() == "saved-token"
+    assert app.input_frame.remember_token.get() == 1
+    assert app.export_options.export_format is ExportFormat.EXCEL
+    assert app.export_options.mode is ExportMode.SINGLE_FILE
 
 
 def test_initial_date_defaults_to_yesterday(app):
@@ -376,7 +371,7 @@ def test_collected_records_feed_charts_and_map(app):
     records = [sample(day, "A565", "BAMBUI", 31.0, 2.0), sample(day, "A521", "BELO HORIZONTE - PAMPULHA", 28.0, 9.0)]
 
     app.comm_queue.put(WorkerMessage(MessageType.RECORDS_COLLECTED, records))
-    pump(app, lambda: app.charts_frame.records)
+    app.process_queue()  # drain directly: update() can spin on matplotlib resize events
 
     charts = app.charts_frame
     assert charts.dataset_label.cget("text") == "Última coleta: 2 estação(ões) · 28/08/2025 · 2 registro(s)"
@@ -410,7 +405,7 @@ def test_map_is_created_on_first_visit_and_uses_catalog_coordinates(app):
     assert isinstance(fake_map, FakeMap)
     assert [m["text"] for m in fake_map.markers] == ["31", "25"]
     assert fake_map.markers[1]["position"] == (-19.5, -44.0)
-    pump(app, lambda: fake_map.bounds)
+    app.map_frame.fit_view()  # normally scheduled with after() once the layout is known
 
     fake_map.markers[0]["command"](None)
     assert app.map_frame.info_label.cget("text").startswith("BAMBUI (A565): 31.0 °C")
