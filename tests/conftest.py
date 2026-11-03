@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from typing import Any
 
@@ -5,6 +6,9 @@ import pytest
 from keyring.errors import KeyringError, PasswordDeleteError
 
 from geoclima.weather.domain.models import WeatherData
+
+# Qt widgets render without a visible window (also on CI). Must be set before the QApplication exists.
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 def make_raw_record(**overrides: Any) -> dict[str, Any]:

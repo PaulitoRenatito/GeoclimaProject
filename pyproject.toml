@@ -16,7 +16,9 @@ dependencies = [
     "tkcalendar (>=1.6.1,<2.0.0)",
     "keyring (>=25.7.0,<26.0.0)",
     "matplotlib (>=3.11.2,<4.0.0)",
-    "tkintermapview (>=1.30,<2.0)"
+    "tkintermapview (>=1.30,<2.0)",
+    "pyside6-essentials (>=6.12.0,<7.0.0)",
+    "pyqtgraph (>=0.14.0,<0.15.0)"
 ]
 
 [project.scripts]
@@ -36,16 +38,9 @@ pandas-stubs = "^3.1.0.261029"
 types-requests = "^2.33.0.20261030"
 types-openpyxl = "^3.1.5.20261017"
 pytest-timeout = "^2.4.0"
+pytest-qt = "^4.5.0"
 
 
-
-# Prototype of a PySide6 interface; install with `poetry install --with qt`.
-[tool.poetry.group.qt]
-optional = true
-
-[tool.poetry.group.qt.dependencies]
-pyside6-essentials = "^6.12.0"
-pyqtgraph = "^0.14.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -77,7 +72,3 @@ testpaths = ["tests"]
 addopts = "--cov=geoclima --cov-report=term-missing"
 # A modal Tk dialog waiting for input would otherwise hang CI for hours; fail with a traceback instead.
 timeout = 60
-
-[tool.coverage.run]
-# The PySide6 prototype needs the optional qt group, which CI does not install.
-omit = ["src/geoclima/qt/*"]

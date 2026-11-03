@@ -19,7 +19,7 @@ def main(argv: list[str] | None = None) -> int:
 
     window = MainWindow()
     if args:
-        window.charts.load_file(Path(args[0]))
+        window.visualize_file(Path(args[0]))
     window.show()
     return app.exec()
 

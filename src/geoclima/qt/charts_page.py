@@ -2,7 +2,7 @@ from datetime import date
 from pathlib import Path
 
 import pyqtgraph as pg
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF, Qt, Signal
 from PySide6.QtGui import QCursor, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
-    QMessageBox,
     QPushButton,
     QSplitter,
     QTableView,
@@ -23,7 +22,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from geoclima.exporter.reader import ExportReadError, read_export
 from geoclima.qt import theme
 from geoclima.qt.theme import checkable, named
 from geoclima.settings import OUTPUT_DIR
@@ -59,7 +57,9 @@ def card(title: str, value: str, detail: str) -> QFrame:
 
 
 class ChartsPage(QWidget):
-    """Same data and aggregations as the customtkinter tab, with interactive pyqtgraph charts and a ranking table."""
+    """Highlights, an interactive chart (station ranking or daily evolution) and a sortable ranking table."""
+
+    file_requested = Signal(Path)  # "Abrir arquivo..." picked an export; the window reads it
 
     def __init__(self, output_dir: Path = OUTPUT_DIR) -> None:
         super().__init__()
@@ -195,15 +195,7 @@ class ChartsPage(QWidget):
             self, "Abrir arquivo exportado", str(self.output_dir), "Exportações do Geoclima (*.csv *.xlsx)"
         )
         if path:
-            self.load_file(Path(path))
-
-    def load_file(self, path: Path) -> None:
-        try:
-            records = read_export(path)
-        except ExportReadError as e:
-            QMessageBox.critical(self, "Arquivo inválido", str(e))
-            return
-        self.set_records(records, path.name)
+            self.file_requested.emit(Path(path))
 
     def set_records(self, records: list[WeatherData], source: str) -> None:
         self.records = records
