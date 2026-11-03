@@ -35,6 +35,7 @@ mypy = "^2.4.1"
 pandas-stubs = "^3.1.0.261029"
 types-requests = "^2.33.0.20261030"
 types-openpyxl = "^3.1.5.20261017"
+pytest-timeout = "^2.4.0"
 
 
 [build-system]
@@ -65,3 +66,5 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=geoclima --cov-report=term-missing"
+# A modal Tk dialog waiting for input would otherwise hang CI for hours; fail with a traceback instead.
+timeout = 60
