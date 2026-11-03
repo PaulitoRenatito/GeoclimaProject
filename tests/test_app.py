@@ -1,17 +1,21 @@
 """Smoke tests of the real Tk window. Skipped where no display is available."""
 
+import os
 import time
 import tkinter
 from datetime import date, timedelta
 from typing import ClassVar
 
+import customtkinter
 import pytest
 
 from geoclima.credentials import TokenStore
 from geoclima.exporter.service import ExportFormat, ExportMode
 from geoclima.preferences import Preferences
 from geoclima.ui import app as app_module
+from geoclima.ui.frames import history_frame as history_module
 from geoclima.ui.frames.action_frame import CANCEL_TEXT, START_TEXT
+from geoclima.ui.frames.history_frame import describe_file, format_size
 from geoclima.ui.messages import MessageType, WorkerMessage
 from geoclima.ui.widgets.exceptions import InputValidationError
 from geoclima.weather.domain.models import Station
@@ -273,11 +277,59 @@ def test_worker_messages_update_the_window(app):
     assert "INFO: Dados recebidos para: BAMBUI" in log
     assert "SUCESSO: pronto" in log
     assert app.action_frame.start_button.cget("text") == START_TEXT
-    history = [w.cget("text") for w in app.history_frame.scrollable_frame.winfo_children()]
-    assert history == ["2025_08_28.csv"]
+    assert history_files(app) == ["2025_08_28.csv"]
+
+
+def history_files(app):
+    return [row.path.name for row in app.history_frame.scrollable_frame.winfo_children() if hasattr(row, "path")]
+
+
+def row_buttons(app, name):
+    (row,) = [
+        r
+        for r in app.history_frame.scrollable_frame.winfo_children()
+        if getattr(r, "path", None) and r.path.name == name
+    ]
+    return {w.cget("text"): w for w in row.winfo_children() if isinstance(w, customtkinter.CTkButton)}
 
 
 def test_empty_history_shows_placeholder(app):
     labels = [w.cget("text") for w in app.history_frame.scrollable_frame.winfo_children()]
 
     assert labels == ["Nenhum arquivo encontrado."]
+    assert app.history_frame.summary_label.cget("text").startswith("0 arquivo(s)")
+
+
+def test_history_lists_exports_newest_first_with_details(app):
+    old, new = app.output_dir / "MG_2025_08_28.csv", app.output_dir / "MG_2025_08_29.xlsx"
+    old.write_text("x" * 2048)
+    new.write_bytes(b"x")
+    os.utime(old, (1_700_000_000, 1_700_000_000))
+    (app.output_dir / "notes.txt").write_text("ignored")
+
+    app.history_frame.populate_history()
+
+    assert history_files(app) == ["MG_2025_08_29.xlsx", "MG_2025_08_28.csv"]
+    assert describe_file(old).startswith("CSV · 2.0 KB · ")
+    assert app.history_frame.summary_label.cget("text").startswith("2 arquivo(s)")
+
+
+def test_history_row_actions(app, monkeypatch):
+    path = app.output_dir / "MG_2025_08_28.csv"
+    path.write_text("x")
+    opened, popen = [], []
+    monkeypatch.setattr(history_module.os, "startfile", opened.append, raising=False)
+    monkeypatch.setattr(history_module.subprocess, "Popen", popen.append)
+    app.history_frame.populate_history()
+
+    buttons = row_buttons(app, path.name)
+    buttons["Abrir"].invoke()
+    buttons["Mostrar na pasta"].invoke()
+
+    assert opened == [path]
+    assert popen == [["explorer", "/select,", str(path)]]
+
+
+@pytest.mark.parametrize(("size", "text"), [(10, "10 B"), (1536, "1.5 KB"), (3 * 1024 * 1024, "3.0 MB")])
+def test_format_size(size, text):
+    assert format_size(size) == text
