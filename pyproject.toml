@@ -1,7 +1,7 @@
 [project]
 name = "GeoclimaProject"
-version = "0.1.0"
-description = ""
+version = "0.2.0"
+description = "Desktop app that collects daily INMET weather station data and exports it to CSV/Excel."
 authors = [
     {name = "PaulitoRenatito",email = "paulorenatosouza02@gmail.com"}
 ]
@@ -12,9 +12,17 @@ dependencies = [
     "requests (>=2.32.4,<3.0.0)",
     "pydantic (>=2.11.7,<3.0.0)",
     "customtkinter (>=5.2.2,<6.0.0)",
-    "openpyxl (>=3.1.5,<4.0.0)",
-    "pyinstaller (>=6.15.0,<7.0.0)"
+    "openpyxl (>=3.1.5,<4.0.0)"
 ]
+
+[project.scripts]
+geoclima = "geoclima.__main__:main"
+
+[tool.poetry]
+packages = [{ include = "geoclima", from = "src" }]
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = ">=6.15.0,<7.0.0"
 
 
 [build-system]

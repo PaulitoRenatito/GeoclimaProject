@@ -24,7 +24,7 @@ Siga os passos abaixo para deixar o ambiente pronto para execução.
 
 ### 1. Pré-requisitos
 
-- **Python**: Versão 3.9 ou superior.
+- **Python**: Versão 3.11 ou superior.
 - **Poetry**: Um gerenciador de dependências para Python. Siga as instruções de instalação oficiais.
 - **Token da API do INMET**: Um token de acesso é necessário para fazer as consultas. Você pode obter o seu gratuitamente no Portal do Desenvolvedor do INMET.
 
@@ -50,7 +50,7 @@ Siga os passos abaixo para deixar o ambiente pronto para execução.
 Com tudo instalado, execute a aplicação com o seguinte comando do Poetry, que garante que o script rode no ambiente virtual correto:
 
 ```bash
-poetry run python gui.py
+poetry run geoclima
 ```
 
 ### Usando a Aplicação
@@ -60,4 +60,4 @@ poetry run python gui.py
    - Para um período, preencha a "Data Inicial" e a "Data Final".
 3. **Inicie a Coleta**: Clique no botão "Iniciar Coleta de Dados".
 
-A barra de progresso e a caixa de log mostrarão o andamento. Ao final, os arquivos gerados aparecerão na aba "Histórico" e serão salvos na pasta `output/`.
+A barra de progresso e a caixa de log mostrarão o andamento. Ao final, os arquivos gerados aparecerão na aba "Histórico" e serão salvos em `Documentos/Geoclima`.

@@ -1,4 +1,16 @@
+# Environments and IDE
 .venv
 .idea
 /env/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# PyInstaller
+/build/
+/dist/
+
+# Generated data
+/output/
 /excel/
