@@ -1,3 +1,4 @@
+import os
 from datetime import date, timedelta
 
 import pytest
@@ -423,3 +424,95 @@ def test_charts_open_file_button(
     monkeypatch.setattr(charts_page.QFileDialog, "getOpenFileName", lambda *a: ("", ""))
     with qtbot.assertNotEmitted(charts.file_requested):
         charts.choose_file()
+
+
+# History page --------------------------------------------------------------
+
+
+def export_sample(window, day=date(2025, 8, 28), fmt=ExportFormat.CSV, mtime=None):
+    (path,) = export_records([make_record(day)], fmt, ExportMode.SINGLE_FILE, window.output_dir)
+    if mtime is not None:
+        os.utime(path, (mtime, mtime))
+    return path
+
+
+def history_names(page):
+    return [page.model.item(row).text() for row in range(page.model.rowCount())]
+
+
+def test_empty_history(window):
+    page = window.history_page
+    assert page.model.rowCount() == 0
+    assert not page.empty_label.isHidden()
+    assert page.table.isHidden()
+    assert not page.visualize_button.isEnabled()
+
+
+def test_history_lists_exports_newest_first_with_details(window):
+    old = export_sample(window, date(2025, 8, 27), mtime=1_700_000_000)
+    new = export_sample(window, date(2025, 8, 28), ExportFormat.EXCEL, mtime=1_800_000_000)
+    (window.output_dir / "notas.txt").write_text("ignored")
+
+    window.bridge.put(WorkerMessage(MessageType.TASK_DONE, "Exportação concluída"))
+
+    page = window.history_page
+    assert history_names(page) == [new.name, old.name]
+    assert page.model.item(0, 1).text() == "Excel"
+    assert page.model.item(1, 2).text().endswith(" B")
+    assert page.summary_label.text() == "2 arquivo(s) na pasta output"
+    assert not page.table.isHidden()
+
+
+def test_history_sorts_by_size(window):
+    export_sample(window, date(2025, 8, 27))
+    big = export_sample(window, date(2025, 8, 28), ExportFormat.EXCEL)
+    page = window.history_page
+    page.refresh()
+
+    page.table.sortByColumn(2, Qt.SortOrder.DescendingOrder)
+
+    assert history_names(page)[0] == big.name
+
+
+def test_history_actions(window, monkeypatch, qtbot):
+    from geoclima.qt import history_page
+
+    opened, revealed = [], []
+    monkeypatch.setattr(history_page, "open_path", opened.append)
+    monkeypatch.setattr(history_page, "reveal_path", revealed.append)
+    path = export_sample(window)
+    page = window.history_page
+    page.refresh()
+    page.table.selectRow(0)
+
+    assert page.visualize_button.isEnabled()
+    page.open_button.click()
+    page.reveal_button.click()
+    page.visualize_button.click()
+
+    assert opened == [path]
+    assert revealed == [path]
+    assert window.current_page == "Gráficos"
+    assert window.charts_page.subtitle.text().startswith(path.name)
+
+    page.open_folder()
+    assert opened[-1] == window.output_dir
+
+
+def test_history_keeps_selection_on_refresh(window):
+    export_sample(window, date(2025, 8, 27), mtime=1_700_000_000)
+    second = export_sample(window, date(2025, 8, 28), mtime=1_800_000_000)
+    page = window.history_page
+    page.refresh()
+    page.table.selectRow(0)
+
+    page.refresh()
+
+    assert page.selected_path() == second
+
+
+@pytest.mark.parametrize(("size", "text"), [(10, "10 B"), (1536, "1.5 KB"), (3 * 1024 * 1024, "3.0 MB")])
+def test_format_size(size, text):
+    from geoclima.qt.history_page import format_size
+
+    assert format_size(size) == text

@@ -22,6 +22,7 @@ from geoclima.exporter.reader import ExportReadError, read_export
 from geoclima.preferences import PREFERENCES_PATH, Preferences
 from geoclima.qt.charts_page import ChartsPage
 from geoclima.qt.collect_page import CollectPage
+from geoclima.qt.history_page import HistoryPage
 from geoclima.qt.theme import checkable, named
 from geoclima.settings import OUTPUT_DIR
 from geoclima.ui.messages import MessageType, WorkerMessage
@@ -30,7 +31,7 @@ from geoclima.ui.worker import CollectionJob, run_collection
 from geoclima.weather.domain.models import WeatherData
 from geoclima.weather.infrastructure.station_catalog import CatalogResult, StationCatalog
 
-COLLECT, CHARTS = "Coleta de Dados", "Gráficos"
+COLLECT, HISTORY, CHARTS = "Coleta de Dados", "Histórico", "Gráficos"
 
 
 class Catalog(Protocol):
@@ -74,6 +75,8 @@ class MainWindow(QMainWindow):
         self.collect_page = CollectPage()
         self.collect_page.start_requested.connect(self.start_task)
         self.collect_page.cancel_requested.connect(self.cancel_task)
+        self.history_page = HistoryPage(output_dir=output_dir)
+        self.history_page.visualize_requested.connect(self.visualize_file)
         self.charts_page = ChartsPage(output_dir=output_dir)
         self.charts_page.file_requested.connect(self.visualize_file)
 
@@ -81,7 +84,7 @@ class MainWindow(QMainWindow):
         self.nav = QButtonGroup(self)
         self.nav_buttons: dict[str, QPushButton] = {}
         sidebar = self._build_sidebar()
-        for name, page in ((COLLECT, self.collect_page), (CHARTS, self.charts_page)):
+        for name, page in ((COLLECT, self.collect_page), (HISTORY, self.history_page), (CHARTS, self.charts_page)):
             self.add_page(name, page)
 
         central = QWidget()
@@ -182,7 +185,8 @@ class MainWindow(QMainWindow):
                 self.show_records(message.payload)
 
     def on_files_exported(self) -> None:
-        """Hook for the history page."""
+        # The folder watcher only starts once the folder exists, which the first export creates.
+        self.history_page.refresh()
 
     def build_job(self) -> CollectionJob:
         page = self.collect_page
