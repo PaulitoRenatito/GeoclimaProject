@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from .exporter import Exporter
+from .exporter import OUTPUT_DIR, Exporter
 
 
 class CsvExporter(Exporter):
@@ -63,8 +63,4 @@ class CsvExporter(Exporter):
         """
         Gera um nome de arquivo normalizado com base na data.
         """
-        if not os.path.exists('output'):
-            os.makedirs('output')
-
-        folder_name = 'output'
-        return f"{folder_name}/{self.date.replace('-', '_')}.csv"
+        return str(OUTPUT_DIR / f"{self.date.replace('-', '_')}.csv")

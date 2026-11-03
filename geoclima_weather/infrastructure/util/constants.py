@@ -48,7 +48,7 @@ mg_stations_dict: dict[str, str] = {
     'ARAXA': 'A505',
     'CAMPINA VERDE': 'A519',
     'CONCEICAO DAS ALAGOAS': 'A520',
-    'ITUIUTABA': 'A510',
+    'ITUIUTABA': 'A512',
     'PATOS DE MINAS': 'A562',
     'PATROCINIO': 'A523',
     'SACRAMENTO': 'A525',

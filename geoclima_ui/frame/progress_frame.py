@@ -9,15 +9,17 @@ class ProgressFrame(customtkinter.CTkFrame):
         self.progress_bar.set(0)
         self.progress_bar.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
         self.maximum = 100
+        self.current = 0
 
-    def configure(self, maximum):
-        self.maximum = maximum
-        self.progress_bar.set(0)
+    # Not named `configure`: that would shadow the tkinter/CTk method CustomTkinter calls internally.
+    def set_maximum(self, maximum):
+        self.maximum = max(maximum, 1)
+        self.reset()
 
     def step(self, amount):
-        current_value = self.progress_bar.get()
-        new_value = (current_value * self.maximum + amount) / self.maximum
-        self.progress_bar.set(min(new_value, 1.0))
+        self.current = min(self.current + amount, self.maximum)
+        self.progress_bar.set(self.current / self.maximum)
 
     def reset(self):
+        self.current = 0
         self.progress_bar.set(0)

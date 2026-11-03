@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import customtkinter
 
 from geoclima_ui.input.date_input import DateInput
+from geoclima_ui.input.exceptions import InputValidationError
 from geoclima_ui.input.password_input import PasswordInput
 
 
@@ -33,8 +34,12 @@ class InputFrame(customtkinter.CTkFrame):
         hint_label.grid(row=3, column=0, columnspan=2, sticky="w", padx=5, pady=(0, 5))
 
     def get_values(self):
-        """Valida e retorna os valores dos inputs."""
+        """Validates the inputs and returns (token, initial_date, final_date or None)."""
         self.token_input.validate()
-        self.initial_date_input.validate()
-        self.final_date_input.validate()
-        return self.token_input.get(), self.initial_date_input.get(), self.final_date_input.get() or None
+        initial_date = self.initial_date_input.validate()
+        final_date = self.final_date_input.validate()
+
+        if final_date is not None and final_date < initial_date:
+            raise InputValidationError("A Data Final não pode ser anterior à Data Inicial.")
+
+        return self.token_input.get().strip(), self.initial_date_input.get(), self.final_date_input.get() or None

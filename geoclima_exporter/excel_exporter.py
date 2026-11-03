@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from .exporter import Exporter
+from .exporter import OUTPUT_DIR, Exporter
 
 
 class ExcelExporter(Exporter):
@@ -16,6 +16,7 @@ class ExcelExporter(Exporter):
             return
 
         filename = self.get_file_name()
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
 
         dict_data = [d.model_dump() for d in self.data]
 
@@ -58,8 +59,4 @@ class ExcelExporter(Exporter):
         """
         Generate a normalized file name based on station name and date range.
         """
-        if not os.path.exists('output'):
-            os.makedirs('output')
-
-        folder_name = 'output'
-        return f"{folder_name}/{self.date.replace('-', '_')}.xlsx"
+        return str(OUTPUT_DIR / f"{self.date.replace('-', '_')}.xlsx")

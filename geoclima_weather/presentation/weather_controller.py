@@ -41,7 +41,4 @@ def start_weather_data_collection(
         progress_queue=progress_queue
     )
 
-    if not dados_coletados:
-        raise ValueError("Nenhum dado foi retornado pela API. Verifique a data e o token.")
-
     return dados_coletados

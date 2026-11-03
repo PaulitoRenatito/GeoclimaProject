@@ -27,8 +27,10 @@ def get_weather_data_intermittently(
         if progress_queue:
             if result:
                 progress_queue.put(('log', f"Dados recebidos para: {result[0].DC_NOME}"))
-            else:
+            elif result is None:
                 progress_queue.put(('log', f"Falha ao obter dados da estação: {request.station_code}"))
+            else:
+                progress_queue.put(('log', f"Estação {request.station_code} sem dados no período."))
             progress_queue.put(('progress_step', 1))
 
         if result:

@@ -71,12 +71,12 @@ class WeatherApp(customtkinter.CTk):
                 if msg_type == 'log':
                     self.log_frame.log_message(data)
                 elif msg_type == 'config_progress':
-                    self.progress_frame.configure(data)
+                    self.progress_frame.set_maximum(data)
                 elif msg_type == 'progress_step':
                     self.progress_frame.step(data)
                 elif msg_type == 'task_done':
                     self.log_frame.show_success(data)
-                    self.history_frame.add_file_entry(data)
+                    self.history_frame.populate_history()
                 elif msg_type == 'task_error':
                     self.log_frame.show_error(data)
                 elif msg_type == 'enable_button':

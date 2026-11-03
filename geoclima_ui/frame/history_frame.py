@@ -2,12 +2,14 @@ import customtkinter
 import os
 from tkinter import messagebox
 
+from geoclima_exporter.exporter import OUTPUT_DIR
+
 class HistoryFrame(customtkinter.CTkFrame):
     """
     Um frame que exibe uma lista de arquivos CSV de um diretório
     e permite abri-los.
     """
-    def __init__(self, parent, output_dir="output", **kwargs):
+    def __init__(self, parent, output_dir=OUTPUT_DIR, **kwargs):
         super().__init__(parent, **kwargs)
         self.output_dir = output_dir
 
