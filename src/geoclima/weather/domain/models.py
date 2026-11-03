@@ -11,6 +11,7 @@ class WeatherData(BaseModel):
     rest of the app never depends on the API naming. INMET sends every number as
     a string (or null), which pydantic converts to float.
     """
+
     model_config = ConfigDict(populate_by_name=True, frozen=True)
 
     station_name: str = Field(alias="DC_NOME")
@@ -28,8 +29,15 @@ class WeatherData(BaseModel):
     precipitation: float | None = Field(default=None, alias="CHUVA")
 
     @field_validator(
-        "latitude", "longitude", "temp_avg", "temp_min", "temp_max",
-        "humidity_avg", "humidity_min", "wind_speed_avg", "precipitation",
+        "latitude",
+        "longitude",
+        "temp_avg",
+        "temp_min",
+        "temp_max",
+        "humidity_avg",
+        "humidity_min",
+        "wind_speed_avg",
+        "precipitation",
         mode="before",
     )
     @classmethod
@@ -41,6 +49,7 @@ class WeatherData(BaseModel):
 
 class WeatherDataRequest(BaseModel):
     """Request for the daily records of one station over a date range (inclusive)."""
+
     model_config = ConfigDict(frozen=True)
 
     initial_date: date

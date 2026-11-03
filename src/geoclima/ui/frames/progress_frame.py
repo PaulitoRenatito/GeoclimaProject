@@ -1,5 +1,6 @@
 import customtkinter
 
+
 class ProgressFrame(customtkinter.CTkFrame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, fg_color="transparent", **kwargs)

@@ -1,0 +1,39 @@
+name: Release
+
+# Push a tag like v0.2.0 to build Geoclima.exe and publish it as a GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Test
+        run: poetry run pytest
+
+      - name: Build executable
+        run: poetry run pyinstaller --noconfirm geoclima.spec
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Geoclima.exe
+          generate_release_notes: true

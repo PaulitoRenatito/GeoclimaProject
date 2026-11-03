@@ -1,4 +1,5 @@
 """Messages sent from the worker thread to the Tk main loop through a queue."""
+
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any

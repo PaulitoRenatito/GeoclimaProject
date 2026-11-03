@@ -1,4 +1,4 @@
-from geoclima.ui.widgets.exceptions import InputValidationError
+from geoclima.ui.validation import validate_token
 from geoclima.ui.widgets.labeled_input import LabeledInput
 
 
@@ -9,7 +9,4 @@ class PasswordInput(LabeledInput):
         super().__init__(parent, label_text, entry_options={"show": "*"}, **kwargs)
 
     def validate(self) -> str:
-        value = self.get()
-        if not value:
-            raise InputValidationError("O campo de Token não pode estar vazio.")
-        return value
+        return validate_token(self.get())

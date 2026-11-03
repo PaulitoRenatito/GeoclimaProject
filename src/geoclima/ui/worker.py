@@ -1,7 +1,9 @@
 """Collection + export flow, run in a background thread. Talks to the GUI only through a queue."""
+
 import logging
 from collections import defaultdict
 from datetime import date
+from pathlib import Path
 from queue import Queue
 
 from geoclima.exporter.csv_exporter import CsvExporter
@@ -38,6 +40,7 @@ def run_collection(
     queue: Queue[WorkerMessage],
     initial_date: date,
     final_date: date | None = None,
+    output_dir: Path = OUTPUT_DIR,
 ) -> None:
     try:
         records = collect_weather_data(
@@ -52,25 +55,31 @@ def run_collection(
             records_by_day[record.measurement_date].append(record)
 
         if not records_by_day:
-            queue.put(WorkerMessage(
-                MessageType.TASK_ERROR,
-                "Nenhum dado foi retornado pela API. Verifique a data e o token.",
-            ))
+            queue.put(
+                WorkerMessage(
+                    MessageType.TASK_ERROR,
+                    "Nenhum dado foi retornado pela API. Verifique a data e o token.",
+                )
+            )
             return
 
-        queue.put(WorkerMessage(
-            MessageType.LOG,
-            f"Coleta finalizada. Exportando {len(records_by_day)} arquivo(s) CSV...",
-        ))
+        queue.put(
+            WorkerMessage(
+                MessageType.LOG,
+                f"Coleta finalizada. Exportando {len(records_by_day)} arquivo(s) CSV...",
+            )
+        )
 
         for day, day_records in sorted(records_by_day.items()):
-            path = CsvExporter(day=day, data=day_records).export()
+            path = CsvExporter(day=day, data=day_records, output_dir=output_dir).export()
             queue.put(WorkerMessage(MessageType.LOG, f"Arquivo '{path.name}' exportado."))
 
-        queue.put(WorkerMessage(
-            MessageType.TASK_DONE,
-            f"Exportação concluída. Arquivos salvos em '{OUTPUT_DIR}'.",
-        ))
+        queue.put(
+            WorkerMessage(
+                MessageType.TASK_DONE,
+                f"Exportação concluída. Arquivos salvos em '{output_dir}'.",
+            )
+        )
 
     except Exception as e:
         logger.exception("Collection failed")

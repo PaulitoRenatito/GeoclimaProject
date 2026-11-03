@@ -8,14 +8,7 @@ class LabeledInput(customtkinter.CTkFrame, ABC):
     """Base widget pairing a Label with an Entry. Subclasses define validate()."""
 
     def __init__(
-            self,
-            parent,
-            label_text,
-            default_value=None,
-            can_be_empty=False,
-            entry_width=30,
-            entry_options=None,
-            **kwargs
+        self, parent, label_text, default_value=None, can_be_empty=False, entry_width=30, entry_options=None, **kwargs
     ):
         super().__init__(parent, fg_color="transparent", **kwargs)
 

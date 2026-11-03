@@ -24,6 +24,7 @@ class Exporter(ABC):
     """
     Writes the records of one day to a file. Subclasses only choose the format.
     """
+
     extension: str
 
     def __init__(self, day: date, data: list[WeatherData], output_dir: Path = OUTPUT_DIR) -> None:

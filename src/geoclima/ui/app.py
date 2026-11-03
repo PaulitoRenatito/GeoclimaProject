@@ -1,9 +1,11 @@
 import queue
 import threading
+from pathlib import Path
 from tkinter import messagebox
 
 import customtkinter
 
+from geoclima.settings import OUTPUT_DIR
 from geoclima.ui.frames.action_frame import ActionFrame
 from geoclima.ui.frames.history_frame import HistoryFrame
 from geoclima.ui.frames.input_frame import InputFrame
@@ -17,8 +19,9 @@ QUEUE_POLL_MS = 100
 
 
 class WeatherApp(customtkinter.CTk):
-    def __init__(self):
+    def __init__(self, output_dir: Path = OUTPUT_DIR):
         super().__init__()
+        self.output_dir = output_dir
 
         self.title("Geoclima - Coletor de Dados Meteorológicos")
         self.geometry("800x600")
@@ -61,7 +64,7 @@ class WeatherApp(customtkinter.CTk):
         self.log_frame = LogFrame(collector_tab)
         self.log_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=(5, 10))
 
-        self.history_frame = HistoryFrame(history_tab)
+        self.history_frame = HistoryFrame(history_tab, output_dir=self.output_dir)
         self.history_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
     def process_queue(self):
@@ -107,6 +110,6 @@ class WeatherApp(customtkinter.CTk):
 
         threading.Thread(
             target=run_collection,
-            args=(token, self.comm_queue, initial_date, final_date),
+            args=(token, self.comm_queue, initial_date, final_date, self.output_dir),
             daemon=True,
         ).start()

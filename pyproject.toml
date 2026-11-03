@@ -23,8 +23,40 @@ packages = [{ include = "geoclima", from = "src" }]
 
 [tool.poetry.group.dev.dependencies]
 pyinstaller = ">=6.15.0,<7.0.0"
+pytest = "^9.2.0"
+pytest-cov = "^7.1.0"
+responses = "^0.26.3"
+ruff = "^0.17.3"
+mypy = "^2.4.1"
+pandas-stubs = "^3.1.0.261029"
+types-requests = "^2.33.0.20261030"
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["geoclima"]
+plugins = ["pydantic.mypy"]
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+module = ["customtkinter.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=geoclima --cov-report=term-missing"

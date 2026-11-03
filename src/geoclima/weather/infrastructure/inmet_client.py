@@ -1,4 +1,5 @@
 """HTTP client for the INMET weather API (https://apitempo.inmet.gov.br)."""
+
 from datetime import date
 
 import requests
@@ -55,9 +56,7 @@ def fetch_daily_data(
         return []
 
     if response.status_code != 200:
-        raise StationDataError(
-            f"Falha ao buscar dados para a estação {station_code}: HTTP {response.status_code}"
-        )
+        raise StationDataError(f"Falha ao buscar dados para a estação {station_code}: HTTP {response.status_code}")
 
     if not response.content.strip():
         return []
@@ -66,7 +65,4 @@ def fetch_daily_data(
 
 
 def build_daily_url(initial_date: date, final_date: date, station_code: str, token: str) -> str:
-    return (
-        f"{BASE_URL}/token/estacao/diaria/"
-        f"{initial_date.isoformat()}/{final_date.isoformat()}/{station_code}/{token}"
-    )
+    return f"{BASE_URL}/token/estacao/diaria/{initial_date.isoformat()}/{final_date.isoformat()}/{station_code}/{token}"

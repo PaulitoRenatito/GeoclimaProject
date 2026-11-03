@@ -1,4 +1,5 @@
 """Use case: collect the daily data of many stations from INMET, respecting a rate limit."""
+
 import logging
 import time
 from collections.abc import Callable, Iterable

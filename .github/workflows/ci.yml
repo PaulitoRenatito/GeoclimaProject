@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    # Windows is the target platform, and its runners have a display, so the Tk smoke tests run too.
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Lint
+        run: |
+          poetry run ruff check src tests
+          poetry run ruff format --check src tests
+
+      - name: Type check
+        run: poetry run mypy
+
+      - name: Test
+        run: poetry run pytest --cov-fail-under=80
